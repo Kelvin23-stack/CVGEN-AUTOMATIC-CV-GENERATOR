@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Templates — CVGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="templates">
+
+<div class="app-shell">
+  <div class="sidebar-overlay"></div>
+  <aside class="sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <nav class="side-nav">
+      <a href="dashboard.html"><i class="fa-solid fa-gauge fa"></i> Dashboard</a>
+      <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
+      <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
+      <a href="templates.html" class="active"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <div class="nav-sep"></div>
+      <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
+      <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
+      <a href="#" class="logout-trigger"><i class="fa-solid fa-right-from-bracket fa"></i> Logout</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar-sm" data-user-initial>U</div>
+      <div>
+        <strong data-user-name>User</strong>
+        <span data-user-email>user@example.com</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="flex gap-10" style="align-items:center;">
+        <button class="mobile-menu-btn icon-btn"><i class="fa-solid fa-bars"></i></button>
+        <h2>Templates</h2>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <p style="color:var(--text-secondary); margin-bottom:26px; max-width:560px;">Choose a design for your CV. You can switch templates anytime from inside the builder.</p>
+
+      <div class="grid-3">
+        <div class="card template-card hoverable">
+          <div class="template-card-thumb">
+            <div class="mini-cv" style="padding:30px; font-family: 'Sora', sans-serif;">
+              <div style="display:flex; gap:14px; align-items:center; border-bottom:3px solid #1c2233; padding-bottom:16px; margin-bottom:16px;">
+                <div style="width:70px;height:70px;border-radius:8px;background:#dde3f5;"></div>
+                <div><div style="font-weight:800;font-size:1.3rem;">Amara Chukwu</div><div style="color:#666;font-size:.9rem;">Product Designer</div></div>
+              </div>
+              <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+              <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;margin-bottom:16px;"></div>
+              <div style="height:6px;width:30%;background:#4f7cff;border-radius:4px;margin-bottom:10px;"></div>
+              <div style="height:8px;width:80%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+            </div>
+          </div>
+          <div class="template-card-body">
+            <div><h4>Professional</h4><span>Clean corporate design</span></div>
+            <button class="btn btn-primary btn-sm" data-select-template="professional">Select</button>
+          </div>
+        </div>
+
+        <div class="card template-card hoverable">
+          <div class="template-card-thumb">
+            <div class="mini-cv" style="display:flex;height:100%;">
+              <div style="width:36%; background:linear-gradient(160deg,#232a4d,#171b33); padding:24px 16px;">
+                <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 14px;"></div>
+                <div style="height:8px;width:80%;background:rgba(255,255,255,0.3);border-radius:4px;margin:0 auto 20px;"></div>
+                <div style="height:6px;width:60%;background:rgba(255,255,255,0.2);border-radius:4px;margin-bottom:8px;"></div>
+                <div style="height:6px;width:70%;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
+              </div>
+              <div style="flex:1; padding:24px;">
+                <div style="height:8px;width:40%;background:#4f7cff;border-radius:4px;margin-bottom:14px;"></div>
+                <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+                <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="template-card-body">
+            <div><h4>Modern</h4><span>Bold sidebar layout</span></div>
+            <button class="btn btn-primary btn-sm" data-select-template="modern">Select</button>
+          </div>
+        </div>
+
+        <div class="card template-card hoverable">
+          <div class="template-card-thumb">
+            <div class="mini-cv" style="padding:34px; text-align:center; font-family:Georgia, serif;">
+              <div style="width:60px;height:60px;border-radius:50%;background:#ddd;margin:0 auto 12px;"></div>
+              <div style="font-size:1.4rem;letter-spacing:.03em;">Amara Chukwu</div>
+              <div style="color:#666;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:18px;">Product Designer</div>
+              <div style="height:1px;width:40px;background:#111;margin:0 auto 14px;"></div>
+              <div style="height:6px;width:60%;background:#eee;border-radius:4px;margin:0 auto 8px;"></div>
+              <div style="height:6px;width:40%;background:#eee;border-radius:4px;margin:0 auto;"></div>
+            </div>
+          </div>
+          <div class="template-card-body">
+            <div><h4>Minimal</h4><span>Elegant black &amp; white</span></div>
+            <button class="btn btn-primary btn-sm" data-select-template="minimal">Select</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

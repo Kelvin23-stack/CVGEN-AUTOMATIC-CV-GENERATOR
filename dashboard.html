@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — CVGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="dashboard">
+
+<div class="app-shell">
+  <div class="sidebar-overlay"></div>
+  <aside class="sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <nav class="side-nav">
+      <a href="dashboard.html" class="active"><i class="fa-solid fa-gauge fa"></i> Dashboard</a>
+      <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
+      <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
+      <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <div class="nav-sep"></div>
+      <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
+      <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
+      <a href="#" class="logout-trigger"><i class="fa-solid fa-right-from-bracket fa"></i> Logout</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar-sm" data-user-initial>U</div>
+      <div>
+        <strong data-user-name>User</strong>
+        <span data-user-email>user@example.com</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="flex gap-10" style="align-items:center;">
+        <button class="mobile-menu-btn icon-btn"><i class="fa-solid fa-bars"></i></button>
+        <h2>Dashboard</h2>
+      </div>
+      <a href="cv-builder.html" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> New CV</a>
+    </header>
+
+    <div class="page-content">
+      <h1 style="font-size:1.6rem;">Welcome back, <span id="greetName">there</span> 👋</h1>
+      <p style="color:var(--text-secondary);margin-top:6px;margin-bottom:30px;">Let's create a CV that represents you professionally.</p>
+
+      <div class="grid-3">
+        <div class="card stat-card">
+          <div class="stat-icon blue"><i class="fa-solid fa-file-lines"></i></div>
+          <div><h3 id="statTotal">0</h3><span>CVs Created</span></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon purple"><i class="fa-solid fa-pen-to-square"></i></div>
+          <div><h3 id="statDraft">0</h3><span>Draft CVs</span></div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+          <div><h3 id="statComplete">0</h3><span>Completed CVs</span></div>
+        </div>
+      </div>
+
+      <div class="card mt-24" style="background:var(--gradient-primary); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+        <div>
+          <h3 style="color:#fff; font-size:1.2rem; margin-bottom:6px;">Create Your First CV</h3>
+          <p style="color:rgba(255,255,255,0.85); font-size:0.9rem;">Start with a blank canvas and build a CV that stands out.</p>
+        </div>
+        <a href="cv-builder.html" class="btn" style="background:#fff; color:var(--accent-purple);"><i class="fa-solid fa-plus"></i> Create New CV</a>
+      </div>
+
+      <div class="section-title-row">
+        <h3>Recent CVs</h3>
+        <a href="my-cvs.html" style="color:var(--accent-blue-light); font-size:0.88rem; font-weight:600;">View all <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+
+      <div class="grid-3" id="recentCVsGrid"></div>
+
+      <div class="empty-state" id="cvsEmptyState" style="display:none;">
+        <i class="fa-solid fa-file-circle-plus"></i>
+        <h3>You haven't created a CV yet.</h3>
+        <p>Start building your professional CV in just a few minutes.</p>
+        <a href="cv-builder.html" class="btn btn-primary">Create Your First CV</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="fa-icon-box"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="confirmNo">Cancel</button>
+      <button class="btn btn-danger" id="confirmYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

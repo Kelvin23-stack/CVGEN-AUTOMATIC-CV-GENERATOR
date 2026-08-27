@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Builder — CVGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body data-page="builder">
+
+<div class="app-shell">
+  <div class="sidebar-overlay"></div>
+  <aside class="sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <nav class="side-nav">
+      <a href="dashboard.html"><i class="fa-solid fa-gauge fa"></i> Dashboard</a>
+      <a href="cv-builder.html" class="active"><i class="fa-solid fa-plus fa"></i> Create CV</a>
+      <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
+      <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <div class="nav-sep"></div>
+      <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
+      <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
+      <a href="#" class="logout-trigger"><i class="fa-solid fa-right-from-bracket fa"></i> Logout</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar-sm" data-user-initial>U</div>
+      <div>
+        <strong data-user-name>User</strong>
+        <span data-user-email>user@example.com</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="builder-top">
+      <div class="flex gap-10" style="align-items:center;">
+        <button class="mobile-menu-btn icon-btn"><i class="fa-solid fa-bars"></i></button>
+        <div>
+          <h2 style="font-size:1.1rem;">CV Builder</h2>
+          <input type="text" id="cvName" placeholder="Untitled CV" style="background:none;border:none;color:var(--text-muted);font-size:0.82rem;padding:0;outline:none;width:180px;">
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="progressLabel">CV Completion: 0%</span>
+      </div>
+      <div class="builder-actions">
+        <a href="#" id="chooseTemplateLink" class="btn btn-ghost btn-sm"><i class="fa-solid fa-swatchbook"></i> Choose Template</a>
+        <button class="btn btn-secondary btn-sm" id="saveCVBtn"><i class="fa-solid fa-floppy-disk"></i> Save CV</button>
+        <button class="btn btn-secondary btn-sm" id="printCVBtn"><i class="fa-solid fa-print"></i> Print</button>
+        <button class="btn btn-primary btn-sm" id="downloadPDFBtn"><i class="fa-solid fa-download"></i> Download PDF</button>
+      </div>
+    </div>
+
+    <div class="builder-layout">
+      <!-- ============ FORM COLUMN ============ -->
+      <div class="form-col" id="cvForm">
+
+        <!-- Personal Information -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-user"></i></div>
+              <h4>Personal Information</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div class="photo-upload">
+              <div class="photo-preview" id="photoPreview"><i class="fa-solid fa-camera"></i></div>
+              <div>
+                <label class="btn btn-secondary btn-sm" for="photoUpload" style="cursor:pointer;">Upload Photo</label>
+                <input type="file" id="photoUpload" accept="image/*" style="display:none;">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field no-icon"><label>Full Name</label><input type="text" id="fullName" placeholder="Amara Chukwu"></div>
+              <div class="field no-icon"><label>Professional Title</label><input type="text" id="profTitle" placeholder="Product Designer"></div>
+            </div>
+            <div class="form-row">
+              <div class="field no-icon"><label>Email</label><input type="email" id="email" placeholder="you@example.com"></div>
+              <div class="field no-icon"><label>Phone</label><input type="tel" id="phone" placeholder="+234 800 000 0000"></div>
+            </div>
+            <div class="form-row">
+              <div class="field no-icon"><label>Location</label><input type="text" id="location" placeholder="Onitsha, Nigeria"></div>
+              <div class="field no-icon"><label>Website</label><input type="text" id="website" placeholder="yourportfolio.com"></div>
+            </div>
+            <div class="form-row single">
+              <div class="field no-icon"><label>LinkedIn</label><input type="text" id="linkedin" placeholder="linkedin.com/in/yourname"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Professional Summary -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-align-left"></i></div>
+              <h4>Professional Summary</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div class="field no-icon">
+              <label>Professional Summary</label>
+              <textarea id="summary" rows="5" placeholder="A short, compelling paragraph highlighting your experience, key skills and career goals..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work Experience -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-briefcase"></i></div>
+              <h4>Work Experience</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="experienceList"></div>
+            <button type="button" class="btn btn-secondary btn-sm w-full" id="addExperienceBtn"><i class="fa-solid fa-plus"></i> Add Experience</button>
+          </div>
+        </div>
+
+        <!-- Education -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-graduation-cap"></i></div>
+              <h4>Education</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="educationList"></div>
+            <button type="button" class="btn btn-secondary btn-sm w-full" id="addEducationBtn"><i class="fa-solid fa-plus"></i> Add Education</button>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-bolt"></i></div>
+              <h4>Skills</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div class="skill-chip-row">
+              <div class="field no-icon" style="flex:1; margin-bottom:0;"><input type="text" id="newSkillName" placeholder="e.g. JavaScript"></div>
+              <div class="field no-icon" style="margin-bottom:0;">
+                <select id="newSkillLevel">
+                  <option>Beginner</option>
+                  <option selected>Intermediate</option>
+                  <option>Advanced</option>
+                  <option>Expert</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="addSkillBtn"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="chip-list" id="skillsChipList"></div>
+          </div>
+        </div>
+
+        <!-- Certifications -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-certificate"></i></div>
+              <h4>Certifications</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="certificationsList"></div>
+            <button type="button" class="btn btn-secondary btn-sm w-full" id="addCertificationBtn"><i class="fa-solid fa-plus"></i> Add Certification</button>
+          </div>
+        </div>
+
+        <!-- Languages -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-language"></i></div>
+              <h4>Languages</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div class="lang-chip-row">
+              <div class="field no-icon" style="flex:1; margin-bottom:0;"><input type="text" id="newLangName" placeholder="e.g. English"></div>
+              <div class="field no-icon" style="margin-bottom:0;">
+                <select id="newLangLevel">
+                  <option>Basic</option>
+                  <option selected>Conversational</option>
+                  <option>Fluent</option>
+                  <option>Native</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="addLanguageBtn"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="chip-list" id="languagesChipList"></div>
+          </div>
+        </div>
+
+        <!-- References -->
+        <div class="accordion-section">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-address-book"></i></div>
+              <h4>References</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <div id="referencesList"></div>
+            <button type="button" class="btn btn-secondary btn-sm w-full" id="addReferenceBtn"><i class="fa-solid fa-plus"></i> Add Reference</button>
+          </div>
+        </div>
+
+        <!-- Templates quick panel -->
+        <div class="accordion-section" id="templatesPanel">
+          <div class="accordion-head">
+            <div class="accordion-head-left">
+              <div class="fa-icon-box"><i class="fa-solid fa-swatchbook"></i></div>
+              <h4>Template</h4>
+            </div>
+            <i class="fa-solid fa-chevron-down chev"></i>
+          </div>
+          <div class="accordion-body">
+            <p class="tag-muted" style="margin-bottom:10px;">Use the switcher above the preview to change templates instantly.</p>
+            <a href="templates.html" class="btn btn-ghost btn-sm w-full">Browse all templates</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PREVIEW COLUMN ============ -->
+      <div class="preview-col">
+        <div class="preview-toolbar">
+          <h4>Live Preview</h4>
+          <div class="template-switch">
+            <button type="button" data-template="professional">Professional</button>
+            <button type="button" data-template="modern">Modern</button>
+            <button type="button" data-template="minimal">Minimal</button>
+          </div>
+        </div>
+        <div class="cv-preview-frame">
+          <div class="cv-page tpl-professional" id="cvPreview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="fa-icon-box"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="confirmNo">Cancel</button>
+      <button class="btn btn-danger" id="confirmYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

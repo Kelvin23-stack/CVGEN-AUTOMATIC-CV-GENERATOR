@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — CVGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="login">
+
+<div class="auth-wrap">
+  <div class="auth-side">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <h2>Welcome back. Let's keep building.</h2>
+    <p class="sub">Log in to pick up where you left off and continue crafting a CV that gets noticed.</p>
+    <ul class="auth-features">
+      <li><span class="check-mark"><i class="fa-solid fa-check"></i></span> Modern CV templates</li>
+      <li><span class="check-mark"><i class="fa-solid fa-check"></i></span> Live CV preview</li>
+      <li><span class="check-mark"><i class="fa-solid fa-check"></i></span> Easy editing</li>
+      <li><span class="check-mark"><i class="fa-solid fa-check"></i></span> PDF download</li>
+    </ul>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+      <h1>Log in to CVGEN</h1>
+      <p class="hint">Enter your details to access your dashboard.</p>
+
+      <div class="alert" id="loginAlert"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field" id="loginEmailField">
+          <label for="loginEmail">Email</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <span class="field-error">Please enter your email.</span>
+        </div>
+
+        <div class="field" id="loginPassField">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+            <button type="button" class="toggle-pass" aria-label="Toggle password visibility"><i class="fa-solid fa-eye"></i></button>
+          </div>
+          <span class="field-error">Please enter your password.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+      </form>
+
+      <p class="auth-foot">Don't have an account? <a href="register.html">Create one</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
