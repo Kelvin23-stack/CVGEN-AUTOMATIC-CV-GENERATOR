@@ -848,10 +848,10 @@ function handlePhotoUpload(e) {
 /* ---------------------------------------------------------
    PHOTO CROPPER — portrait crop with drag-to-pan & zoom
    --------------------------------------------------------- */
-const CROP_VIEW_W = 225;   // on-screen crop frame, px (3:4 portrait)
-const CROP_VIEW_H = 300;
-const CROP_OUTPUT_W = 450; // exported photo resolution, same 3:4 ratio
-const CROP_OUTPUT_H = 600;
+const CROP_VIEW_W = 260;   // on-screen crop frame, px (1:1 square)
+const CROP_VIEW_H = 260;
+const CROP_OUTPUT_W = 640; // exported photo resolution — square, well above the 500px minimum
+const CROP_OUTPUT_H = 640;
 
 const cropState = {
   naturalWidth: 0,

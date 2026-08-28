@@ -839,14 +839,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .crop-modal-box { max-width: 380px; }
 .crop-stage-wrap { display: flex; justify-content: center; margin: 20px 0 16px; }
 .crop-stage {
-  width: 225px; height: 300px; /* 3:4 portrait frame */
-  border-radius: 12px; overflow: hidden; position: relative;
+  width: 260px; height: 260px; /* 1:1 square frame, matches profile-photo convention */
+  border-radius: 50%; /* circular mask preview — the exported file itself stays square */
+  overflow: hidden; position: relative;
   background: var(--bg-void); border: 2px solid var(--border-medium);
   cursor: grab; touch-action: none;
 }
 .crop-stage:active { cursor: grabbing; }
 .crop-stage img {
   position: absolute; top: 0; left: 0;
+  /* Override the site-wide "img { max-width: 100% }" reset — without this,
+     the browser clamps the image's rendered WIDTH to the frame while our
+     JS-computed HEIGHT stays uncapped, which is what was stretching faces
+     into an oval. Both axes must be free to use our explicit px sizing. */
+  max-width: none; max-height: none;
   user-select: none; -webkit-user-drag: none;
   will-change: transform; pointer-events: none;
 }
