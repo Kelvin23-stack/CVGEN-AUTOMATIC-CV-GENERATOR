@@ -1202,18 +1202,25 @@ function downloadPDF() {
   btn.disabled = true;
 
   // The live preview sits inside a scrollable, height-limited container
-  // (.cv-preview-frame). Capturing it directly can produce a blank/cut-off
-  // PDF because html2canvas follows the ancestor's scroll/overflow state.
-  // To avoid that, clone the preview into a fully-visible, off-screen
-  // wrapper — sized to A4 width at 96dpi — render from the clone, then
-  // remove it.
+  // (.cv-preview-frame), and html2canvas also factors in the *page's* own
+  // scroll position when it captures. Cloning the CV into an off-screen
+  // wrapper avoids the container problem, but pushing it out with an
+  // extreme offset (e.g. -99999px) breaks html2canvas's internal canvas
+  // math — that's what was producing the blank/shifted exports. Instead,
+  // keep the clone at normal on-screen coordinates (0,0) and simply make
+  // it invisible to the user (near-zero opacity, sent behind the UI with a
+  // negative z-index), and pin scrollX/scrollY/x/y to 0 explicitly so the
+  // capture always starts from the clone's true top-left corner.
   const source = document.getElementById('cvPreview');
   const clone = source.cloneNode(true);
   const wrapper = document.createElement('div');
   wrapper.style.position = 'fixed';
   wrapper.style.top = '0';
-  wrapper.style.left = '-99999px';
+  wrapper.style.left = '0';
   wrapper.style.width = '794px';
+  wrapper.style.zIndex = '-1';
+  wrapper.style.opacity = '0.01';
+  wrapper.style.pointerEvents = 'none';
   wrapper.style.background = '#ffffff';
   clone.style.maxHeight = 'none';
   clone.style.overflow = 'visible';
@@ -1226,7 +1233,16 @@ function downloadPDF() {
     margin: 0,
     filename: 'My-CV.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      windowWidth: 794,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
