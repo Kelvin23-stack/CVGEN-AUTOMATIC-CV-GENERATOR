@@ -148,7 +148,7 @@ function blankCV() {
     status: 'draft',
     createdAt: new Date().toISOString(),
     lastEdited: new Date().toISOString(),
-    personal: { fullName: '', title: '', email: '', phone: '', location: '', website: '', linkedin: '', photo: '' },
+    personal: { fullName: '', title: '', email: '', phone: '', location: '', website: '', linkedin: '', photo: '', photoOriginal: '' },
     summary: '',
     experience: [],
     education: [],
@@ -513,6 +513,18 @@ function renderRecentCVs(cvs) {
   });
 }
 
+/**
+ * Prefers the CV owner's actual name for display over the generic
+ * "Untitled CV" placeholder — falls back to their professional title,
+ * then finally the CV's own custom name/title.
+ */
+function getCVDisplayName(cv) {
+  const p = cv.personal || {};
+  if (p.fullName && p.fullName.trim()) return p.fullName.trim();
+  if (p.title && p.title.trim()) return p.title.trim();
+  return cv.name || 'Untitled CV';
+}
+
 function cvCardHTML(cv) {
   const progress = calculateProgress(cv);
   const status = cv.status === 'completed' ? 'completed' : 'draft';
@@ -521,7 +533,7 @@ function cvCardHTML(cv) {
       <div class="cv-card-top">
         <div class="cv-thumb"></div>
         <div>
-          <strong>${escapeHTML(cv.name)}</strong>
+          <strong>${escapeHTML(getCVDisplayName(cv))}</strong>
           <span>${escapeHTML(cv.template)} template &middot; edited ${formatDate(cv.lastEdited)}</span>
         </div>
       </div>
@@ -727,10 +739,18 @@ function initBuilderPage() {
   const cvNameInput = document.getElementById('cvName');
   cvNameInput.addEventListener('input', () => { currentCV.name = cvNameInput.value.trim() || 'Untitled CV'; });
 
-  // Photo upload
+  // Photo upload + cropper
   const photoInput = document.getElementById('photoUpload');
   if (photoInput) {
     photoInput.addEventListener('change', handlePhotoUpload);
+  }
+  initPhotoCropper();
+  const editPhotoBtn = document.getElementById('editPhotoBtn');
+  if (editPhotoBtn) {
+    editPhotoBtn.addEventListener('click', () => {
+      const src = currentCV.personal.photoOriginal || currentCV.personal.photo;
+      if (src) openPhotoCropper(src);
+    });
   }
 
   // Add entry buttons
@@ -791,6 +811,8 @@ function populateFormFromCV() {
   if (p.photo) {
     const preview = document.getElementById('photoPreview');
     preview.innerHTML = '<img src="' + p.photo + '" alt="Profile photo">';
+    const editBtn = document.getElementById('editPhotoBtn');
+    if (editBtn) editBtn.style.display = 'inline-flex';
   }
 }
 
@@ -818,11 +840,150 @@ function handlePhotoUpload(e) {
   if (!file.type.startsWith('image/')) { showToast('Please upload a valid image file', 'error'); return; }
   const reader = new FileReader();
   reader.onload = function (ev) {
-    currentCV.personal.photo = ev.target.result;
-    document.getElementById('photoPreview').innerHTML = '<img src="' + ev.target.result + '" alt="Profile photo">';
-    updatePreview();
+    openPhotoCropper(ev.target.result);
   };
   reader.readAsDataURL(file);
+}
+
+/* ---------------------------------------------------------
+   PHOTO CROPPER — portrait crop with drag-to-pan & zoom
+   --------------------------------------------------------- */
+const CROP_VIEW_W = 225;   // on-screen crop frame, px (3:4 portrait)
+const CROP_VIEW_H = 300;
+const CROP_OUTPUT_W = 450; // exported photo resolution, same 3:4 ratio
+const CROP_OUTPUT_H = 600;
+
+const cropState = {
+  naturalWidth: 0,
+  naturalHeight: 0,
+  baseScale: 1,   // scale at which the image just covers the crop frame
+  zoom: 1,        // extra zoom multiplier from the slider (1.0 - 3.0)
+  offsetX: 0,
+  offsetY: 0,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  dragOffsetStartX: 0,
+  dragOffsetStartY: 0
+};
+
+function openPhotoCropper(dataUrl) {
+  const modal = document.getElementById('photoCropModal');
+  const img = document.getElementById('cropImage');
+  const slider = document.getElementById('cropZoomSlider');
+
+  img.onload = () => {
+    cropState.naturalWidth = img.naturalWidth;
+    cropState.naturalHeight = img.naturalHeight;
+    cropState.baseScale = Math.max(CROP_VIEW_W / img.naturalWidth, CROP_VIEW_H / img.naturalHeight);
+    cropState.zoom = 1;
+    slider.value = 100;
+    centerCropImage();
+    applyCropTransform();
+  };
+  img.src = dataUrl;
+  modal.dataset.pendingPhoto = dataUrl;
+  modal.classList.add('show');
+}
+
+function centerCropImage() {
+  const scale = cropState.baseScale * cropState.zoom;
+  const dispW = cropState.naturalWidth * scale;
+  const dispH = cropState.naturalHeight * scale;
+  cropState.offsetX = (CROP_VIEW_W - dispW) / 2;
+  cropState.offsetY = (CROP_VIEW_H - dispH) / 2;
+}
+
+function clampCropOffsets() {
+  const scale = cropState.baseScale * cropState.zoom;
+  const dispW = cropState.naturalWidth * scale;
+  const dispH = cropState.naturalHeight * scale;
+  const minX = CROP_VIEW_W - dispW; // most negative allowed (right edge flush)
+  const minY = CROP_VIEW_H - dispH;
+  cropState.offsetX = Math.min(0, Math.max(minX, cropState.offsetX));
+  cropState.offsetY = Math.min(0, Math.max(minY, cropState.offsetY));
+}
+
+function applyCropTransform() {
+  const img = document.getElementById('cropImage');
+  const scale = cropState.baseScale * cropState.zoom;
+  img.style.width = (cropState.naturalWidth * scale) + 'px';
+  img.style.height = (cropState.naturalHeight * scale) + 'px';
+  img.style.transform = `translate(${cropState.offsetX}px, ${cropState.offsetY}px)`;
+}
+
+function initPhotoCropper() {
+  const stage = document.getElementById('cropStage');
+  const slider = document.getElementById('cropZoomSlider');
+  const applyBtn = document.getElementById('cropApplyBtn');
+  const cancelBtn = document.getElementById('cropCancelBtn');
+  const modal = document.getElementById('photoCropModal');
+  if (!stage) return; // cropper markup only exists on the builder page
+
+  slider.addEventListener('input', () => {
+    cropState.zoom = slider.value / 100;
+    clampCropOffsets();
+    applyCropTransform();
+  });
+
+  stage.addEventListener('pointerdown', (e) => {
+    cropState.dragging = true;
+    cropState.dragStartX = e.clientX;
+    cropState.dragStartY = e.clientY;
+    cropState.dragOffsetStartX = cropState.offsetX;
+    cropState.dragOffsetStartY = cropState.offsetY;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!cropState.dragging) return;
+    cropState.offsetX = cropState.dragOffsetStartX + (e.clientX - cropState.dragStartX);
+    cropState.offsetY = cropState.dragOffsetStartY + (e.clientY - cropState.dragStartY);
+    clampCropOffsets();
+    applyCropTransform();
+  });
+  const endDrag = () => { cropState.dragging = false; };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+  stage.addEventListener('pointerleave', endDrag);
+
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const nextVal = Math.min(300, Math.max(100, Number(slider.value) - e.deltaY * 0.2));
+    slider.value = nextVal;
+    cropState.zoom = nextVal / 100;
+    clampCropOffsets();
+    applyCropTransform();
+  }, { passive: false });
+
+  cancelBtn.addEventListener('click', () => {
+    modal.classList.remove('show');
+    const photoInput = document.getElementById('photoUpload');
+    if (photoInput) photoInput.value = '';
+  });
+
+  applyBtn.addEventListener('click', () => {
+    const img = document.getElementById('cropImage');
+    const scale = cropState.baseScale * cropState.zoom;
+    const cropX = -cropState.offsetX / scale;
+    const cropY = -cropState.offsetY / scale;
+    const cropW = CROP_VIEW_W / scale;
+    const cropH = CROP_VIEW_H / scale;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = CROP_OUTPUT_W;
+    canvas.height = CROP_OUTPUT_H;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, CROP_OUTPUT_W, CROP_OUTPUT_H);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+    currentCV.personal.photo = croppedDataUrl;
+    currentCV.personal.photoOriginal = modal.dataset.pendingPhoto || croppedDataUrl;
+    document.getElementById('photoPreview').innerHTML = '<img src="' + croppedDataUrl + '" alt="Profile photo">';
+    document.getElementById('editPhotoBtn').style.display = 'inline-flex';
+    modal.classList.remove('show');
+    updatePreview();
+    showToast('Photo updated', 'success');
+  });
 }
 
 /* ---- Experience ---- */

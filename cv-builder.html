@@ -92,11 +92,13 @@
           <div class="accordion-body">
             <div class="photo-upload">
               <div class="photo-preview" id="photoPreview"><i class="fa-solid fa-camera"></i></div>
-              <div>
+              <div class="flex gap-10" style="flex-wrap:wrap;">
                 <label class="btn btn-secondary btn-sm" for="photoUpload" style="cursor:pointer;">Upload Photo</label>
+                <button type="button" class="btn btn-ghost btn-sm" id="editPhotoBtn" style="display:none;"><i class="fa-solid fa-crop-simple"></i> Edit / Crop</button>
                 <input type="file" id="photoUpload" accept="image/*" style="display:none;">
               </div>
             </div>
+            <p class="tag-muted" style="margin:-10px 0 16px;">Photos are cropped to a portrait frame — you can reposition and zoom after uploading.</p>
             <div class="form-row">
               <div class="field no-icon"><label>Full Name</label><input type="text" id="fullName" placeholder="Amara Chukwu"></div>
               <div class="field no-icon"><label>Professional Title</label><input type="text" id="profTitle" placeholder="Product Designer"></div>
@@ -288,6 +290,31 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="confirmNo">Cancel</button>
       <button class="btn btn-danger" id="confirmYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="photoCropModal">
+  <div class="modal-box crop-modal-box">
+    <div class="fa-icon-box" style="background:rgba(79,124,255,0.12); color:var(--accent-blue-light);"><i class="fa-solid fa-crop-simple"></i></div>
+    <h3>Adjust Your Photo</h3>
+    <p>Drag to reposition, scroll or use the slider to zoom. Your photo is cropped to a portrait frame for the CV.</p>
+
+    <div class="crop-stage-wrap">
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImage" src="" alt="Crop preview" draggable="false">
+      </div>
+    </div>
+
+    <div class="crop-zoom-row">
+      <i class="fa-solid fa-magnifying-glass-minus"></i>
+      <input type="range" id="cropZoomSlider" min="100" max="300" value="100" step="1" aria-label="Zoom">
+      <i class="fa-solid fa-magnifying-glass-plus"></i>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cropCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="cropApplyBtn"><i class="fa-solid fa-check"></i> Apply</button>
     </div>
   </div>
 </div>
