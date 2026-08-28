@@ -1079,10 +1079,13 @@ function updatePreview() {
   frame.innerHTML = renderTemplate(currentCV);
 
   const progress = calculateProgress(currentCV);
-  const fill = document.getElementById('progressFill');
+  const circumference = 169.6; // 2 * PI * r(27), matches stroke-dasharray in CSS
+  const ringFill = document.getElementById('progressRingFill');
+  const ringText = document.getElementById('progressRingText');
   const label = document.getElementById('progressLabel');
-  if (fill) fill.style.width = progress + '%';
-  if (label) label.textContent = 'CV Completion: ' + progress + '%';
+  if (ringFill) ringFill.style.strokeDashoffset = circumference - (circumference * progress) / 100;
+  if (ringText) ringText.textContent = progress + '%';
+  if (label) label.textContent = progress >= 100 ? 'All done!' : progress >= 90 ? 'Almost there' : 'Keep going';
 }
 
 function renderTemplate(cv) {
@@ -1192,28 +1195,51 @@ function downloadPDF() {
     showToast('Please add some information before downloading', 'error');
     return;
   }
-  const el = document.getElementById('cvPreview');
+
   const btn = document.getElementById('downloadPDFBtn');
   const originalHTML = btn.innerHTML;
   btn.innerHTML = '<span class="spinner"></span> Generating...';
   btn.disabled = true;
 
+  // The live preview sits inside a scrollable, height-limited container
+  // (.cv-preview-frame). Capturing it directly can produce a blank/cut-off
+  // PDF because html2canvas follows the ancestor's scroll/overflow state.
+  // To avoid that, clone the preview into a fully-visible, off-screen
+  // wrapper — sized to A4 width at 96dpi — render from the clone, then
+  // remove it.
+  const source = document.getElementById('cvPreview');
+  const clone = source.cloneNode(true);
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '0';
+  wrapper.style.left = '-99999px';
+  wrapper.style.width = '794px';
+  wrapper.style.background = '#ffffff';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+  clone.style.width = '794px';
+  clone.style.margin = '0';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
   const opt = {
     margin: 0,
     filename: 'My-CV.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 794 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
-  html2pdf().set(opt).from(el).save().then(() => {
+  html2pdf().set(opt).from(clone).save().then(() => {
+    document.body.removeChild(wrapper);
     btn.innerHTML = originalHTML;
     btn.disabled = false;
     showToast('PDF downloaded successfully', 'success');
     saveCV(currentCV);
   }).catch((err) => {
     console.error(err);
+    if (wrapper.parentNode) document.body.removeChild(wrapper);
     btn.innerHTML = originalHTML;
     btn.disabled = false;
     showToast('Something went wrong generating the PDF', 'error');
