@@ -457,6 +457,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .auth-foot { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 0.9rem; }
 .auth-foot a { color: var(--accent-blue-light); font-weight: 600; }
 
+.auth-divider { display: flex; align-items: center; gap: 14px; margin: 22px 0; color: var(--text-muted); font-size: 0.8rem; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-medium); }
+#googleAuthBtn { gap: 10px; }
+#googleAuthBtn svg { flex-shrink: 0; }
+
 .alert { padding: 13px 16px; border-radius: var(--radius-sm); font-size: 0.88rem; margin-bottom: 20px; display: none; align-items: center; gap: 10px; }
 .alert.show { display: flex; }
 .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(46,204,143,0.3); }

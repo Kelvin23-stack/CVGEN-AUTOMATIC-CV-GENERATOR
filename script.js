@@ -1,16 +1,14 @@
 /* =========================================================
    CVGEN — script.js
-   All application logic (vanilla JS, localStorage powered)
+   Application logic — Supabase-backed auth & CV persistence,
+   vanilla JS everywhere else (UI, templates, PDF, cropper).
    ========================================================= */
 
 /* ---------------------------------------------------------
    0. STORAGE KEYS & HELPERS
    --------------------------------------------------------- */
 const STORAGE_KEYS = {
-  USERS: 'cvgen_users',
-  SESSION: 'cvgen_session',
-  CVS_PREFIX: 'cvgen_cvs_',       // + email
-  SETTINGS_PREFIX: 'cvgen_settings_' // + email
+  SETTINGS_PREFIX: 'cvgen_settings_' // + user id — local UI prefs only, not synced
 };
 
 function readJSON(key, fallback) {
@@ -33,8 +31,19 @@ function writeJSON(key, value) {
   }
 }
 
+/** Short id for nested items within a CV (experience/education/etc rows). Not a DB key. */
 function uid(prefix) {
   return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/** Real UUID for a CV's own id — required since it maps to a Postgres uuid column. */
+function newUUID() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 function escapeHTML(str) {
@@ -54,95 +63,179 @@ function formatDate(d) {
 }
 
 /* ---------------------------------------------------------
-   1. AUTHENTICATION
+   1. AUTHENTICATION (Supabase Auth)
    --------------------------------------------------------- */
-function getUsers() {
-  return readJSON(STORAGE_KEYS.USERS, []);
-}
 
-function getSession() {
-  return readJSON(STORAGE_KEYS.SESSION, null);
-}
+// Cached, normalized user for the current page load. Populated by
+// requireAuth() / redirectIfLoggedIn(); safe to read synchronously
+// anywhere that runs after one of those has resolved.
+let currentUser = null;
 
-function isLoggedIn() {
-  const s = getSession();
-  return !!(s && s.isLoggedIn && s.email);
-}
-
-function getCurrentUser() {
-  const s = getSession();
-  if (!s || !s.email) return null;
-  return getUsers().find(u => u.email.toLowerCase() === s.email.toLowerCase()) || null;
-}
-
-/** Registers a new user. Returns {success, message} */
-function registerUser(name, email, password) {
-  const users = getUsers();
-  const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-  if (exists) {
-    return { success: false, message: 'An account with this email already exists.' };
-  }
-  const newUser = {
-    id: uid('user'),
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password: password, // demo only — never store plain-text passwords in production
-    createdAt: new Date().toISOString()
+function normalizeUser(supabaseUser) {
+  if (!supabaseUser) return null;
+  const meta = supabaseUser.user_metadata || {};
+  return {
+    id: supabaseUser.id,
+    name: meta.full_name || (supabaseUser.email ? supabaseUser.email.split('@')[0] : 'there'),
+    email: supabaseUser.email,
+    createdAt: supabaseUser.created_at
   };
-  users.push(newUser);
-  writeJSON(STORAGE_KEYS.USERS, users);
-  return { success: true, message: 'Account created successfully!' };
 }
 
-/** Attempts login. Returns {success, message} */
-function loginUser(email, password) {
-  const users = getUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-  if (!user || user.password !== password) {
+async function getSupabaseSessionUser() {
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    console.error('getSession error:', error);
+    return null;
+  }
+  return data.session ? data.session.user : null;
+}
+
+/** Returns the cached current user (sync). Only valid after requireAuth()/redirectIfLoggedIn() resolved. */
+function getCurrentUser() {
+  return currentUser;
+}
+
+/** Registers a new user with Supabase Auth. Returns {success, message, autoLoggedIn}. */
+async function registerUser(name, email, password) {
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password: password,
+    options: { data: { full_name: name.trim() } }
+  });
+
+  if (error) {
+    return { success: false, message: error.message || 'Could not create your account.' };
+  }
+  if (data.session) {
+    // Email confirmation is disabled on this project — user is signed in immediately.
+    return { success: true, message: 'Account created successfully!', autoLoggedIn: true };
+  }
+  return {
+    success: true,
+    autoLoggedIn: false,
+    message: 'Account created! Check your inbox to confirm your email, then log in.'
+  };
+}
+
+/** Attempts login with Supabase Auth. Returns {success, message}. */
+async function loginUser(email, password) {
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password: password
+  });
+
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('confirm')) {
+      return { success: false, message: 'Please confirm your email before logging in — check your inbox.' };
+    }
     return { success: false, message: 'Invalid email or password.' };
   }
-  writeJSON(STORAGE_KEYS.SESSION, { email: user.email, isLoggedIn: true, loginAt: new Date().toISOString() });
   return { success: true, message: 'Welcome back!' };
 }
 
-function logoutUser() {
-  localStorage.removeItem(STORAGE_KEYS.SESSION);
-  window.location.href = 'index.html';
-}
-
-/** Guards protected pages. Call at top of protected pages. */
-function requireAuth() {
-  if (!isLoggedIn()) {
-    window.location.href = 'login.html';
+/** Starts the "Sign in with Google" OAuth flow (full-page redirect via Supabase). */
+async function signInWithGoogle() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname.replace(/[^/]+$/, 'dashboard.html') }
+  });
+  if (error) {
+    console.error('Google sign-in error:', error);
+    showToast('Could not start Google sign-in', 'error');
   }
 }
 
-/** Redirects away from login/register if already logged in. */
-function redirectIfLoggedIn() {
-  if (isLoggedIn()) {
+async function logoutUser() {
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  window.location.href = 'index.html';
+}
+
+/** Guards protected pages. Redirects to login.html if not signed in; caches the user otherwise. */
+async function requireAuth() {
+  const user = await getSupabaseSessionUser();
+  if (!user) {
+    window.location.href = 'login.html';
+    return null;
+  }
+  currentUser = normalizeUser(user);
+  return currentUser;
+}
+
+/** Redirects away from login/register if already signed in. */
+async function redirectIfLoggedIn() {
+  const user = await getSupabaseSessionUser();
+  if (user) {
     window.location.href = 'dashboard.html';
   }
 }
 
 /* ---------------------------------------------------------
-   2. CV DATA MODEL
+   2. CV DATA MODEL (Supabase tables: cvs + experiences, education,
+      skills, certifications, languages, "references")
    --------------------------------------------------------- */
-function cvsKey() {
-  const user = getCurrentUser();
-  return STORAGE_KEYS.CVS_PREFIX + (user ? user.email : 'guest');
+
+/** Row → app-shape mappers for each child table (DB column names → the field names the UI uses). */
+function rowToExperienceItem(r) {
+  return { id: r.id, title: r.job_title || '', company: r.company || '', location: r.location || '', start: r.start_date || '', end: r.end_date || '', description: r.description || '' };
+}
+function rowToEducationItem(r) {
+  return { id: r.id, school: r.school || '', degree: r.degree || '', field: r.field_of_study || '', start: r.start_date || '', end: r.end_date || '', description: r.description || '' };
+}
+function rowToSkillItem(r) {
+  return { id: r.id, name: r.name || '', level: r.level || 'Intermediate' };
+}
+function rowToCertificationItem(r) {
+  return { id: r.id, name: r.name || '', org: r.issuing_organization || '', date: r.issue_date || '' };
+}
+function rowToLanguageItem(r) {
+  return { id: r.id, name: r.name || '', level: r.level || 'Conversational' };
+}
+function rowToReferenceItem(r) {
+  return { id: r.id, name: r.full_name || '', position: r.job_position || '', org: r.organization || '', email: r.email || '', phone: r.phone || '' };
 }
 
-function getAllCVs() {
-  return readJSON(cvsKey(), []);
-}
+function bySortOrder(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); }
 
-function getCVById(id) {
-  return getAllCVs().find(c => c.id === id) || null;
+/** Combines a `cvs` row with its child-table rows into the app's flat CV shape. */
+function rowsToCV(cvRow, children) {
+  children = children || {};
+  return {
+    id: cvRow.id,
+    name: cvRow.name || 'Untitled CV',
+    template: cvRow.template || 'professional',
+    status: cvRow.status || 'draft',
+    createdAt: cvRow.created_at,
+    lastEdited: cvRow.updated_at,
+    personal: {
+      fullName: cvRow.full_name || '',
+      title: cvRow.professional_title || '',
+      email: cvRow.email || '',
+      phone: cvRow.phone || '',
+      location: cvRow.location || '',
+      website: cvRow.website || '',
+      linkedin: cvRow.linkedin || '',
+      photo: cvRow.photo_url || '',
+      // No separate "original photo" column in the DB — re-cropping after a
+      // reload just starts from the last-saved photo (still a clean 640x640
+      // source, so quality loss on re-crop is negligible).
+      photoOriginal: cvRow.photo_url || ''
+    },
+    summary: cvRow.summary || '',
+    experience: (children.experiences || []).slice().sort(bySortOrder).map(rowToExperienceItem),
+    education: (children.education || []).slice().sort(bySortOrder).map(rowToEducationItem),
+    skills: (children.skills || []).slice().sort(bySortOrder).map(rowToSkillItem),
+    certifications: (children.certifications || []).slice().sort(bySortOrder).map(rowToCertificationItem),
+    languages: (children.languages || []).slice().sort(bySortOrder).map(rowToLanguageItem),
+    references: (children.references || []).slice().sort(bySortOrder).map(rowToReferenceItem)
+  };
 }
 
 function blankCV() {
   return {
-    id: uid('cv'),
+    id: newUUID(),
     name: 'Untitled CV',
     template: 'professional',
     status: 'draft',
@@ -159,29 +252,170 @@ function blankCV() {
   };
 }
 
-/** Saves (creates or updates) a CV. Returns the saved CV. */
-function saveCV(cvData) {
-  const all = getAllCVs();
-  cvData.lastEdited = new Date().toISOString();
-  const idx = all.findIndex(c => c.id === cvData.id);
-  if (idx >= 0) {
-    all[idx] = cvData;
-  } else {
-    all.push(cvData);
+/**
+ * Fetches every CV belonging to the signed-in user for list views (Dashboard,
+ * My CVs). Only counts of each child table are pulled — not the full rows —
+ * so the progress bar / "X% complete" figure is accurate without the cost of
+ * fetching every experience/education/etc row for every CV in the list.
+ */
+async function getAllCVs() {
+  if (!currentUser) return [];
+  const { data, error } = await supabaseClient
+    .from('cvs')
+    .select('*, experiences(count), education(count), skills(count), certifications(count), languages(count), "references"(count)')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('getAllCVs error:', error);
+    showToast('Could not load your CVs — check your connection', 'error');
+    return [];
   }
-  writeJSON(cvsKey(), all);
-  return cvData;
+
+  return data.map((row) => {
+    const cv = rowsToCV(row, {});
+    // calculateProgress() only checks `.length > 0` for these — placeholder
+    // arrays of the right length are enough, without fetching real rows.
+    cv.experience = Array(row.experiences?.[0]?.count || 0).fill({});
+    cv.education = Array(row.education?.[0]?.count || 0).fill({});
+    cv.skills = Array(row.skills?.[0]?.count || 0).fill({});
+    cv.certifications = Array(row.certifications?.[0]?.count || 0).fill({});
+    cv.languages = Array(row.languages?.[0]?.count || 0).fill({});
+    return cv;
+  });
 }
 
-/** Loads a CV by id, or returns a blank one if no id supplied. */
-function loadCV(id) {
+/** Fetches one CV with all of its child rows — used when opening it in the builder. */
+async function getCVById(id) {
+  if (!currentUser) return null;
+  const { data: cvRow, error: cvError } = await supabaseClient
+    .from('cvs')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (cvError || !cvRow) return null;
+
+  const [experiences, education, skills, certifications, languages, references] = await Promise.all([
+    supabaseClient.from('experiences').select('*').eq('cv_id', id),
+    supabaseClient.from('education').select('*').eq('cv_id', id),
+    supabaseClient.from('skills').select('*').eq('cv_id', id),
+    supabaseClient.from('certifications').select('*').eq('cv_id', id),
+    supabaseClient.from('languages').select('*').eq('cv_id', id),
+    supabaseClient.from('references').select('*').eq('cv_id', id)
+  ]);
+
+  return rowsToCV(cvRow, {
+    experiences: experiences.data || [],
+    education: education.data || [],
+    skills: skills.data || [],
+    certifications: certifications.data || [],
+    languages: languages.data || [],
+    references: references.data || []
+  });
+}
+
+/** Replaces all rows in a child table for one CV with the current in-memory list. */
+async function replaceChildRows(table, cvId, rows) {
+  const { error: delError } = await supabaseClient.from(table).delete().eq('cv_id', cvId);
+  if (delError) {
+    console.error(`saveCV error (clearing ${table}):`, delError);
+    return false;
+  }
+  if (rows.length === 0) return true;
+  const { error: insError } = await supabaseClient.from(table).insert(rows);
+  if (insError) {
+    console.error(`saveCV error (inserting ${table}):`, insError);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Saves (creates or updates) a CV: upserts the `cvs` row, then fully
+ * replaces each child table's rows with the current in-memory arrays.
+ * Simpler and safer than diffing add/remove/reorder — the whole form is
+ * always re-synced on every save. Returns the freshly reloaded CV.
+ */
+async function saveCV(cvData) {
+  if (!currentUser) return cvData;
+  cvData.lastEdited = new Date().toISOString();
+
+  const cvPayload = {
+    id: cvData.id,
+    user_id: currentUser.id,
+    name: cvData.name,
+    template: cvData.template,
+    status: cvData.status,
+    full_name: cvData.personal.fullName,
+    professional_title: cvData.personal.title,
+    email: cvData.personal.email,
+    phone: cvData.personal.phone,
+    location: cvData.personal.location,
+    website: cvData.personal.website,
+    linkedin: cvData.personal.linkedin,
+    photo_url: cvData.personal.photo,
+    summary: cvData.summary
+  };
+
+  const { data: savedCV, error: cvError } = await supabaseClient.from('cvs').upsert(cvPayload).select().single();
+  if (cvError) {
+    console.error('saveCV error (cvs):', cvError);
+    showToast('Could not save your CV — check your connection', 'error');
+    return cvData;
+  }
+
+  const cvId = savedCV.id;
+  const uid_ = currentUser.id;
+
+  const results = await Promise.all([
+    replaceChildRows('experiences', cvId, cvData.experience.map((e, i) => ({
+      cv_id: cvId, user_id: uid_, job_title: e.title, company: e.company, location: e.location,
+      start_date: e.start, end_date: e.end, description: e.description, sort_order: i
+    }))),
+    replaceChildRows('education', cvId, cvData.education.map((e, i) => ({
+      cv_id: cvId, user_id: uid_, school: e.school, degree: e.degree, field_of_study: e.field,
+      start_date: e.start, end_date: e.end, description: e.description, sort_order: i
+    }))),
+    replaceChildRows('skills', cvId, cvData.skills.map((s, i) => ({
+      cv_id: cvId, user_id: uid_, name: s.name, level: s.level, sort_order: i
+    }))),
+    replaceChildRows('certifications', cvId, cvData.certifications.map((c, i) => ({
+      cv_id: cvId, user_id: uid_, name: c.name, issuing_organization: c.org, issue_date: c.date, sort_order: i
+    }))),
+    replaceChildRows('languages', cvId, cvData.languages.map((l, i) => ({
+      cv_id: cvId, user_id: uid_, name: l.name, level: l.level, sort_order: i
+    }))),
+    replaceChildRows('references', cvId, cvData.references.map((r, i) => ({
+      cv_id: cvId, user_id: uid_, full_name: r.name, job_position: r.position, organization: r.org,
+      email: r.email, phone: r.phone, sort_order: i
+    })))
+  ]);
+
+  if (results.some((ok) => !ok)) {
+    showToast('CV saved, but some sections may not have synced — try saving again', 'error');
+  }
+
+  // Reload from the DB so returned ids/order match exactly what's stored.
+  return (await getCVById(cvId)) || cvData;
+}
+
+/** Loads a CV by id, or returns a blank one if no id supplied / not found. */
+async function loadCV(id) {
   if (!id) return blankCV();
-  return getCVById(id) || blankCV();
+  const cv = await getCVById(id);
+  return cv || blankCV();
 }
 
-function deleteCV(id) {
-  const all = getAllCVs().filter(c => c.id !== id);
-  writeJSON(cvsKey(), all);
+/** Deletes a CV — child rows cascade-delete automatically via their cv_id foreign key. */
+async function deleteCV(id) {
+  if (!currentUser) return;
+  const { error } = await supabaseClient.from('cvs').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) {
+    console.error('deleteCV error:', error);
+    showToast('Could not delete this CV', 'error');
+  }
 }
 
 /* ---------------------------------------------------------
@@ -287,13 +521,13 @@ function initSidebar() {
 
 function getSettings() {
   const user = getCurrentUser();
-  const key = STORAGE_KEYS.SETTINGS_PREFIX + (user ? user.email : 'guest');
+  const key = STORAGE_KEYS.SETTINGS_PREFIX + (user ? user.id : 'guest');
   return readJSON(key, { darkMode: false, animations: true });
 }
 
 function saveSettings(settings) {
   const user = getCurrentUser();
-  const key = STORAGE_KEYS.SETTINGS_PREFIX + (user ? user.email : 'guest');
+  const key = STORAGE_KEYS.SETTINGS_PREFIX + (user ? user.id : 'guest');
   writeJSON(key, settings);
 }
 
@@ -355,12 +589,12 @@ function clearFieldError(fieldEl) {
 /* =========================================================
    8. PAGE INIT: REGISTER
    ========================================================= */
-function initRegisterPage() {
-  redirectIfLoggedIn();
+async function initRegisterPage() {
+  await redirectIfLoggedIn();
   const form = document.getElementById('registerForm');
   if (!form) return;
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     const nameField = document.getElementById('regNameField');
     const emailField = document.getElementById('regEmailField');
@@ -381,18 +615,32 @@ function initRegisterPage() {
 
     if (!valid) return;
 
-    const result = registerUser(name, email, password);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnHTML = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner"></span> Creating account...';
+    submitBtn.disabled = true;
+
+    const result = await registerUser(name, email, password);
+
+    submitBtn.innerHTML = originalBtnHTML;
+    submitBtn.disabled = false;
+
     const alertBox = document.getElementById('registerAlert');
     if (result.success) {
       alertBox.className = 'alert alert-success show';
       alertBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + result.message;
       form.reset();
-      setTimeout(() => { window.location.href = 'login.html'; }, 1400);
+      setTimeout(() => {
+        window.location.href = result.autoLoggedIn ? 'dashboard.html' : 'login.html';
+      }, 1600);
     } else {
       alertBox.className = 'alert alert-error show';
       alertBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + result.message;
     }
   });
+
+  const googleBtn = document.getElementById('googleAuthBtn');
+  if (googleBtn) googleBtn.addEventListener('click', signInWithGoogle);
 
   initPasswordToggles();
 }
@@ -400,12 +648,12 @@ function initRegisterPage() {
 /* =========================================================
    9. PAGE INIT: LOGIN
    ========================================================= */
-function initLoginPage() {
-  redirectIfLoggedIn();
+async function initLoginPage() {
+  await redirectIfLoggedIn();
   const form = document.getElementById('loginForm');
   if (!form) return;
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     const emailField = document.getElementById('loginEmailField');
     const passField = document.getElementById('loginPassField');
@@ -420,16 +668,28 @@ function initLoginPage() {
     if (!password) { setFieldError(passField, 'Please enter your password.'); valid = false; }
     if (!valid) return;
 
-    const result = loginUser(email, password);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnHTML = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner"></span> Logging in...';
+    submitBtn.disabled = true;
+
+    const result = await loginUser(email, password);
+
+    submitBtn.innerHTML = originalBtnHTML;
+    submitBtn.disabled = false;
+
     if (result.success) {
       alertBox.className = 'alert alert-success show';
       alertBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + result.message;
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
     } else {
       alertBox.className = 'alert alert-error show';
       alertBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + result.message;
     }
   });
+
+  const googleBtn = document.getElementById('googleAuthBtn');
+  if (googleBtn) googleBtn.addEventListener('click', signInWithGoogle);
 
   initPasswordToggles();
 }
@@ -453,17 +713,17 @@ function initPasswordToggles() {
 /* =========================================================
    10. PAGE INIT: DASHBOARD
    ========================================================= */
-function initDashboardPage() {
-  requireAuth();
+async function initDashboardPage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
 
-  const user = getCurrentUser();
   const greetEl = document.getElementById('greetName');
-  if (greetEl && user) greetEl.textContent = user.name.split(' ')[0];
+  if (greetEl) greetEl.textContent = user.name.split(' ')[0];
 
-  const cvs = getAllCVs();
+  const cvs = await getAllCVs();
   const total = cvs.length;
   const drafts = cvs.filter(c => c.status === 'draft').length;
   const completed = cvs.filter(c => c.status === 'completed').length;
@@ -476,7 +736,6 @@ function initDashboardPage() {
   if (completeEl) completeEl.textContent = completed;
 
   renderRecentCVs(cvs);
-
 }
 
 function renderRecentCVs(cvs) {
@@ -503,11 +762,11 @@ function renderRecentCVs(cvs) {
       confirmDialog({
         title: 'Delete this CV?',
         message: 'This action cannot be undone. The CV and all its data will be permanently removed.'
-      }, () => {
-        deleteCV(id);
+      }, async () => {
+        await deleteCV(id);
         showToast('CV deleted successfully', 'success');
-        initDashboardPage();
-        if (typeof initMyCVsPage === 'function' && document.getElementById('allCVsGrid')) initMyCVsPage();
+        await initDashboardPage();
+        if (typeof initMyCVsPage === 'function' && document.getElementById('allCVsGrid')) await initMyCVsPage();
       });
     });
   });
@@ -556,12 +815,14 @@ function quickDownload(id) {
 /* =========================================================
    11. PAGE INIT: MY CVs (uses dashboard grid render, full list)
    ========================================================= */
-function initMyCVsPage() {
-  requireAuth();
+async function initMyCVsPage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
-  const cvs = getAllCVs();
+
+  const cvs = await getAllCVs();
   const container = document.getElementById('allCVsGrid');
   const emptyState = document.getElementById('cvsEmptyState');
   if (!container) return;
@@ -583,55 +844,65 @@ function initMyCVsPage() {
       confirmDialog({
         title: 'Delete this CV?',
         message: 'This action cannot be undone. The CV and all its data will be permanently removed.'
-      }, () => {
-        deleteCV(id);
+      }, async () => {
+        await deleteCV(id);
         showToast('CV deleted successfully', 'success');
-        initMyCVsPage();
+        await initMyCVsPage();
       });
     });
   });
-
 }
 
 /* =========================================================
    12. PAGE INIT: PROFILE
    ========================================================= */
-function initProfilePage() {
-  requireAuth();
+async function initProfilePage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
 
-  const user = getCurrentUser();
-  if (!user) return;
   document.getElementById('profileName').value = user.name;
   document.getElementById('profileEmail').value = user.email;
   document.getElementById('profileCreated').textContent = formatDate(user.createdAt);
   document.getElementById('profileInitial').textContent = user.name.trim().charAt(0).toUpperCase();
 
   const form = document.getElementById('profileForm');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newName = document.getElementById('profileName').value.trim();
     if (!newName) { showToast('Name cannot be empty', 'error'); return; }
-    const users = getUsers();
-    const idx = users.findIndex(u => u.email === user.email);
-    if (idx >= 0) {
-      users[idx].name = newName;
-      writeJSON(STORAGE_KEYS.USERS, users);
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalHTML = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner"></span> Saving...';
+    submitBtn.disabled = true;
+
+    const { error } = await supabaseClient.auth.updateUser({ data: { full_name: newName } });
+    if (!error) {
+      // Mirror onto the profiles table too, so it stays queryable/joinable server-side.
+      await supabaseClient.from('profiles').update({ full_name: newName }).eq('id', user.id);
+      currentUser.name = newName;
       showToast('Profile updated successfully', 'success');
       populateSidebarUser();
-      document.getElementById('profileInitial').textContent = newName.trim().charAt(0).toUpperCase();
+      document.getElementById('profileInitial').textContent = newName.charAt(0).toUpperCase();
+    } else {
+      console.error('Profile update error:', error);
+      showToast('Could not update your profile', 'error');
     }
-  });
 
+    submitBtn.innerHTML = originalHTML;
+    submitBtn.disabled = false;
+  });
 }
 
 /* =========================================================
    13. PAGE INIT: SETTINGS
    ========================================================= */
-function initSettingsPage() {
-  requireAuth();
+async function initSettingsPage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
@@ -663,19 +934,24 @@ function initSettingsPage() {
     confirmDialog({
       title: 'Clear all CV data?',
       message: 'This will permanently delete every CV you have created. This cannot be undone.'
-    }, () => {
-      writeJSON(cvsKey(), []);
-      showToast('All CV data cleared', 'success');
+    }, async () => {
+      const { error } = await supabaseClient.from('cvs').delete().eq('user_id', user.id);
+      if (error) {
+        console.error('Clear data error:', error);
+        showToast('Could not clear your CV data', 'error');
+      } else {
+        showToast('All CV data cleared', 'success');
+      }
     });
   });
-
 }
 
 /* =========================================================
    14. PAGE INIT: TEMPLATES GALLERY
    ========================================================= */
-function initTemplatesPage() {
-  requireAuth();
+async function initTemplatesPage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
@@ -686,7 +962,6 @@ function initTemplatesPage() {
       window.location.href = 'cv-builder.html?template=' + encodeURIComponent(tpl);
     });
   });
-
 }
 
 /* =========================================================
@@ -698,15 +973,16 @@ function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-function initBuilderPage() {
-  requireAuth();
+async function initBuilderPage() {
+  const user = await requireAuth();
+  if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
 
   const cvId = getParam('id');
   const tplParam = getParam('template');
-  currentCV = loadCV(cvId);
+  currentCV = await loadCV(cvId);
   if (tplParam) currentCV.template = tplParam;
 
   // Populate form fields from currentCV
@@ -771,12 +1047,22 @@ function initBuilderPage() {
   });
 
   // Action buttons
-  document.getElementById('saveCVBtn').addEventListener('click', () => {
+  document.getElementById('saveCVBtn').addEventListener('click', async () => {
     syncFormToCV();
     const progress = calculateProgress(currentCV);
     currentCV.status = progress >= 90 ? 'completed' : 'draft';
-    saveCV(currentCV);
+
+    const saveBtn = document.getElementById('saveCVBtn');
+    const originalHTML = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+    saveBtn.disabled = true;
+
+    currentCV = await saveCV(currentCV);
+
+    saveBtn.innerHTML = originalHTML;
+    saveBtn.disabled = false;
     showToast('CV saved successfully', 'success');
+
     // Reflect id in URL for subsequent saves
     const url = new URL(window.location);
     url.searchParams.set('id', currentCV.id);
@@ -1408,12 +1694,12 @@ function downloadPDF() {
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
-  html2pdf().set(opt).from(clone).save().then(() => {
+  html2pdf().set(opt).from(clone).save().then(async () => {
     document.body.removeChild(wrapper);
     btn.innerHTML = originalHTML;
     btn.disabled = false;
     showToast('PDF downloaded successfully', 'success');
-    saveCV(currentCV);
+    currentCV = await saveCV(currentCV);
   }).catch((err) => {
     console.error(err);
     if (wrapper.parentNode) document.body.removeChild(wrapper);
@@ -1431,26 +1717,26 @@ function printCV() {
 /* ---------------------------------------------------------
    18. GLOBAL INIT (runs on every page)
    --------------------------------------------------------- */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initMobileNav();
   initFadeInObserver();
 
   // Logout works from any page that has a .logout-trigger element (sidebar, settings row, etc.)
   document.querySelectorAll('.logout-trigger').forEach(el => {
-    el.addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
+    el.addEventListener('click', async (e) => { e.preventDefault(); await logoutUser(); });
   });
 
   const page = document.body.getAttribute('data-page');
   switch (page) {
     case 'landing': break; // no auth-bound logic needed
-    case 'register': initRegisterPage(); break;
-    case 'login': initLoginPage(); break;
-    case 'dashboard': initDashboardPage(); break;
-    case 'builder': initBuilderPage(); break;
-    case 'templates': initTemplatesPage(); break;
-    case 'mycvs': initMyCVsPage(); break;
-    case 'profile': initProfilePage(); break;
-    case 'settings': initSettingsPage(); break;
+    case 'register': await initRegisterPage(); break;
+    case 'login': await initLoginPage(); break;
+    case 'dashboard': await initDashboardPage(); break;
+    case 'builder': await initBuilderPage(); break;
+    case 'templates': await initTemplatesPage(); break;
+    case 'mycvs': await initMyCVsPage(); break;
+    case 'profile': await initProfilePage(); break;
+    case 'settings': await initSettingsPage(); break;
     default: break;
   }
 });
