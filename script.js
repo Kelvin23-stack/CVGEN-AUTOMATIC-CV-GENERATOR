@@ -84,21 +84,23 @@ function normalizeUser(supabaseUser) {
 
 async function getSupabaseSessionUser() {
   // Right after a Google (or any OAuth) redirect, the session tokens sit in
-  // the URL hash — supabase-js needs a moment to detect and store them
-  // before getSession() will see anything. Without this wait, a fast check
-  // (like requireAuth() on page load) can run first, see "not logged in
-  // yet," and bounce back to login before the library catches up. If we can
-  // see an OAuth hash, wait briefly for a real SIGNED_IN event first.
+  // the URL hash. supabase-js is *supposed* to auto-detect and store these
+  // (detectSessionInUrl: true is the default), but that hasn't proven
+  // reliable in this deployment — so instead of trusting it, parse the
+  // hash ourselves and hand the tokens to Supabase directly via
+  // setSession(). This is Supabase's own documented fallback for exactly
+  // this situation and doesn't depend on the library's automatic behavior.
   if (window.location.hash.includes('access_token')) {
-    await new Promise((resolve) => {
-      const { data: sub } = supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session) {
-          sub.subscription.unsubscribe();
-          resolve();
-        }
-      });
-      setTimeout(resolve, 2500); // safety net so this never hangs if something's genuinely wrong
-    });
+    const params = new URLSearchParams(window.location.hash.slice(1)); // drop leading '#'
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (access_token && refresh_token) {
+      const { error: setError } = await supabaseClient.auth.setSession({ access_token, refresh_token });
+      if (setError) console.error('setSession error:', setError);
+    }
+    // Remove the token from the URL either way, so it's never left sitting
+    // there (and never re-processed if this function runs again).
+    history.replaceState(null, '', window.location.pathname + window.location.search);
   }
 
   const { data, error } = await supabaseClient.auth.getSession();
