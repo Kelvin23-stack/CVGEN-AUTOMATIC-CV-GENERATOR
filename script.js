@@ -1739,12 +1739,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMobileNav();
   initFadeInObserver();
 
+  // Defensive catch-all: if we've landed anywhere with a fresh sign-in
+  // token in the URL — e.g. Supabase's OAuth redirect fell back to the
+  // project's default Site URL instead of the exact page the app asked
+  // for — finish establishing the session here and send the person to
+  // their dashboard, instead of stranding them wherever they landed.
+  const page = document.body.getAttribute('data-page');
+  if (window.location.hash.includes('access_token') && page !== 'dashboard') {
+    const user = await getSupabaseSessionUser();
+    if (user) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+  }
+
   // Logout works from any page that has a .logout-trigger element (sidebar, settings row, etc.)
   document.querySelectorAll('.logout-trigger').forEach(el => {
     el.addEventListener('click', async (e) => { e.preventDefault(); await logoutUser(); });
   });
 
-  const page = document.body.getAttribute('data-page');
   switch (page) {
     case 'landing': break; // no auth-bound logic needed
     case 'register': await initRegisterPage(); break;
