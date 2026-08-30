@@ -26,6 +26,8 @@
       <a href="cv-builder.html" class="active"><i class="fa-solid fa-plus fa"></i> Create CV</a>
       <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
       <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <a href="ai-builder.html"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder <span class="nav-tag">Soon</span></a>
+      <a href="pro.html"><i class="fa-solid fa-crown fa"></i> Pro</a>
       <div class="nav-sep"></div>
       <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
       <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
@@ -266,13 +268,7 @@
       <div class="preview-col">
         <div class="preview-toolbar">
           <h4>Live Preview</h4>
-          <div class="template-switch">
-            <button type="button" data-template="professional">Professional</button>
-            <button type="button" data-template="modern">Modern</button>
-            <button type="button" data-template="minimal">Minimal</button>
-            <button type="button" data-template="neon">Neon</button>
-            <button type="button" data-template="aurora">Aurora</button>
-          </div>
+          <div class="template-switch" id="templateSwitchButtons"></div>
         </div>
         <div class="cv-preview-frame">
           <div class="cv-page tpl-professional" id="cvPreview"></div>
@@ -315,6 +311,18 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="cropCancelBtn">Cancel</button>
       <button class="btn btn-primary" id="cropApplyBtn"><i class="fa-solid fa-check"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="proUpgradeModal">
+  <div class="modal-box">
+    <div class="pro-modal-icon"><i class="fa-solid fa-crown"></i></div>
+    <h3>Premium Template</h3>
+    <p>This template will be available with CVGEN Pro. Unlock premium templates and upcoming AI-powered tools.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="proModalClose">Maybe Later</button>
+      <a href="pro.html" class="btn btn-primary">View Pro Plans</a>
     </div>
   </div>
 </div>

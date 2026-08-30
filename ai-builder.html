@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI CV Builder — Coming Soon — CVGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="ai-builder">
+
+<div class="app-shell">
+  <div class="sidebar-overlay"></div>
+  <aside class="sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <nav class="side-nav">
+      <a href="dashboard.html"><i class="fa-solid fa-gauge fa"></i> Dashboard</a>
+      <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
+      <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
+      <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <a href="ai-builder.html" class="active"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder <span class="nav-tag">Soon</span></a>
+      <a href="pro.html"><i class="fa-solid fa-crown fa"></i> Pro</a>
+      <div class="nav-sep"></div>
+      <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
+      <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
+      <a href="#" class="logout-trigger"><i class="fa-solid fa-right-from-bracket fa"></i> Logout</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar-sm" data-user-initial>U</div>
+      <div>
+        <strong data-user-name>User</strong>
+        <span data-user-email>user@example.com</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="flex gap-10" style="align-items:center;">
+        <button class="mobile-menu-btn icon-btn"><i class="fa-solid fa-bars"></i></button>
+        <h2>AI Builder</h2>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="ai-hero-card">
+        <div class="ai-hero-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h1>✨ AI CV Builder <span class="pro-badge" style="vertical-align:middle;"><i class="fa-solid fa-crown"></i> Pro</span></h1>
+        <p class="lead">Build a stronger CV with AI. Generate professional content, improve your experience descriptions, and optimize your CV for the jobs you want.</p>
+        <div class="ai-hero-actions">
+          <span class="soon-badge" style="font-size:0.8rem; padding:8px 18px;">Coming Soon</span>
+          <button class="btn btn-primary" id="aiNotifyBtn"><i class="fa-solid fa-bell"></i> Notify Me</button>
+          <div class="alert alert-success" id="aiNotifyConfirm" style="display:none; margin:0; padding:10px 18px;">
+            <i class="fa-solid fa-circle-check"></i> You're on the list! We'll let you know when AI CV Builder becomes available.
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title-row" style="margin-top:0;">
+        <h3>What's coming</h3>
+      </div>
+
+      <div class="grid-3">
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-align-left"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>AI Professional Summary</h4>
+          <p>Generate a professional summary based on your experience and target role.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-briefcase"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>AI Experience Writer</h4>
+          <p>Turn simple descriptions into polished, professional CV bullet points.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>AI Skills Suggestions</h4>
+          <p>Get relevant skill suggestions based on your target job title.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>Job Description Matcher</h4>
+          <p>Paste a job description and get suggestions for improving your CV's match.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>CV Score</h4>
+          <p>Analyze your CV and get concrete suggestions to make it stronger.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-bullseye"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>Career Objective Generator</h4>
+          <p>Generate a professional career objective tailored to your goals.</p>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+            <span class="soon-badge">Soon</span>
+          </div>
+          <h4>Cover Letter Generator</h4>
+          <p>Generate a cover letter based on your CV and a target job.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

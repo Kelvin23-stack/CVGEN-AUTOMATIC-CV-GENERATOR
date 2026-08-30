@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVGEN Pro — Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="pro">
+
+<div class="app-shell">
+  <div class="sidebar-overlay"></div>
+  <aside class="sidebar">
+    <a href="index.html" class="logo"><span class="logo-mark">CV</span>CVGEN</a>
+    <nav class="side-nav">
+      <a href="dashboard.html"><i class="fa-solid fa-gauge fa"></i> Dashboard</a>
+      <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
+      <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
+      <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <a href="ai-builder.html"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder <span class="nav-tag">Soon</span></a>
+      <a href="pro.html" class="active"><i class="fa-solid fa-crown fa"></i> Pro</a>
+      <div class="nav-sep"></div>
+      <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
+      <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
+      <a href="#" class="logout-trigger"><i class="fa-solid fa-right-from-bracket fa"></i> Logout</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="avatar-sm" data-user-initial>U</div>
+      <div>
+        <strong data-user-name>User</strong>
+        <span data-user-email>user@example.com</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="flex gap-10" style="align-items:center;">
+        <button class="mobile-menu-btn icon-btn"><i class="fa-solid fa-bars"></i></button>
+        <h2>Pro</h2>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="pricing-head">
+        <div class="eyebrow" style="justify-content:center;"><span class="dot"></span> Pricing</div>
+        <h1>Build a CV that gets noticed.</h1>
+        <p>Unlock premium templates and upcoming AI-powered tools with CVGEN Pro.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="card pricing-card">
+          <div class="pricing-plan-name">Free</div>
+          <div class="pricing-price">₦0</div>
+          <div class="pricing-price-sub">Forever free</div>
+          <ul class="pricing-features">
+            <li><i class="fa-solid fa-circle-check"></i> Create CV</li>
+            <li><i class="fa-solid fa-circle-check"></i> Basic CV templates</li>
+            <li><i class="fa-solid fa-circle-check"></i> Live CV preview</li>
+            <li><i class="fa-solid fa-circle-check"></i> PDF download</li>
+            <li><i class="fa-solid fa-circle-check"></i> Save CV to your account</li>
+            <li><i class="fa-solid fa-circle-check"></i> Google / email login</li>
+          </ul>
+          <button class="btn btn-secondary btn-block" disabled id="currentPlanBtn">Current Plan</button>
+        </div>
+
+        <div class="card pricing-card pro-plan">
+          <div class="pricing-plan-name"><i class="fa-solid fa-crown" style="color:#f5c453;"></i> CVGEN Pro</div>
+          <div class="pricing-price">₦2,500 <span>/ month</span></div>
+          <div class="pricing-price-sub">or ₦20,000 / year &middot; <em>planned pricing, not yet billed</em></div>
+          <ul class="pricing-features">
+            <li><i class="fa-solid fa-circle-check"></i> Everything in Free</li>
+            <li><i class="fa-solid fa-circle-check"></i> Premium CV templates</li>
+            <li><i class="fa-solid fa-circle-check"></i> Advanced CV customization</li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> AI CV Builder <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> AI Professional Summary <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> AI Experience Writer <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> AI Skills Suggestions <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> Job Description Matcher <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> CV Score <span class="soon-badge">Soon</span></li>
+            <li class="soon-item"><i class="fa-solid fa-circle-check"></i> Cover Letter Generator <span class="soon-badge">Soon</span></li>
+            <li><i class="fa-solid fa-circle-check"></i> More templates added regularly</li>
+          </ul>
+          <button class="btn btn-primary btn-block" id="upgradeProBtn"><i class="fa-solid fa-crown"></i> Upgrade to Pro</button>
+        </div>
+      </div>
+
+      <p class="pricing-note">CVGEN Pro billing isn't live yet — pricing shown above is planned. Clicking "Upgrade to Pro" won't charge you anything.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

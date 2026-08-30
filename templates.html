@@ -25,6 +25,8 @@
       <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
       <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
       <a href="templates.html" class="active"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
+      <a href="ai-builder.html"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder <span class="nav-tag">Soon</span></a>
+      <a href="pro.html"><i class="fa-solid fa-crown fa"></i> Pro</a>
       <div class="nav-sep"></div>
       <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
       <a href="settings.html"><i class="fa-solid fa-gear fa"></i> Settings</a>
@@ -48,110 +50,35 @@
     </header>
 
     <div class="page-content">
-      <p style="color:var(--text-secondary); margin-bottom:26px; max-width:560px;">Choose a design for your CV. You can switch templates anytime from inside the builder.</p>
+      <p style="color:var(--text-secondary); margin-bottom:30px; max-width:560px;">Choose a design for your CV. Free templates are ready to use right away — Pro templates unlock with CVGEN Pro.</p>
 
-      <div class="grid-3">
-        <div class="card template-card hoverable">
-          <div class="template-card-thumb">
-            <div class="mini-cv" style="padding:30px; font-family: 'Sora', sans-serif;">
-              <div style="display:flex; gap:14px; align-items:center; border-bottom:3px solid #1c2233; padding-bottom:16px; margin-bottom:16px;">
-                <div style="width:70px;height:70px;border-radius:8px;background:#dde3f5;"></div>
-                <div><div style="font-weight:800;font-size:1.3rem;">Amara Chukwu</div><div style="color:#666;font-size:.9rem;">Product Designer</div></div>
-              </div>
-              <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
-              <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;margin-bottom:16px;"></div>
-              <div style="height:6px;width:30%;background:#4f7cff;border-radius:4px;margin-bottom:10px;"></div>
-              <div style="height:8px;width:80%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
-            </div>
-          </div>
-          <div class="template-card-body">
-            <div><h4>Professional</h4><span>Clean corporate design</span></div>
-            <button class="btn btn-primary btn-sm" data-select-template="professional">Select</button>
-          </div>
+      <div class="template-gallery-section">
+        <div class="template-gallery-head">
+          <h3>Free Templates</h3>
+          <span class="free-badge"><i class="fa-solid fa-check"></i> Included</span>
         </div>
-
-        <div class="card template-card hoverable">
-          <div class="template-card-thumb">
-            <div class="mini-cv" style="display:flex;height:100%;">
-              <div style="width:36%; background:linear-gradient(160deg,#232a4d,#171b33); padding:24px 16px;">
-                <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 14px;"></div>
-                <div style="height:8px;width:80%;background:rgba(255,255,255,0.3);border-radius:4px;margin:0 auto 20px;"></div>
-                <div style="height:6px;width:60%;background:rgba(255,255,255,0.2);border-radius:4px;margin-bottom:8px;"></div>
-                <div style="height:6px;width:70%;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
-              </div>
-              <div style="flex:1; padding:24px;">
-                <div style="height:8px;width:40%;background:#4f7cff;border-radius:4px;margin-bottom:14px;"></div>
-                <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
-                <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;"></div>
-              </div>
-            </div>
-          </div>
-          <div class="template-card-body">
-            <div><h4>Modern</h4><span>Bold sidebar layout</span></div>
-            <button class="btn btn-primary btn-sm" data-select-template="modern">Select</button>
-          </div>
-        </div>
-
-        <div class="card template-card hoverable">
-          <div class="template-card-thumb">
-            <div class="mini-cv" style="padding:34px; text-align:center; font-family:Georgia, serif;">
-              <div style="width:60px;height:60px;border-radius:50%;background:#ddd;margin:0 auto 12px;"></div>
-              <div style="font-size:1.4rem;letter-spacing:.03em;">Amara Chukwu</div>
-              <div style="color:#666;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:18px;">Product Designer</div>
-              <div style="height:1px;width:40px;background:#111;margin:0 auto 14px;"></div>
-              <div style="height:6px;width:60%;background:#eee;border-radius:4px;margin:0 auto 8px;"></div>
-              <div style="height:6px;width:40%;background:#eee;border-radius:4px;margin:0 auto;"></div>
-            </div>
-          </div>
-          <div class="template-card-body">
-            <div><h4>Minimal</h4><span>Elegant black &amp; white</span></div>
-            <button class="btn btn-primary btn-sm" data-select-template="minimal">Select</button>
-          </div>
-        </div>
-
-        <div class="card template-card hoverable">
-          <div class="template-card-thumb" style="background:#0a0e1a;">
-            <div class="mini-cv" style="padding:28px; font-family:'Sora', sans-serif; background:#0a0e1a; color:#d7deff; height:100%;
-                 background-image: linear-gradient(rgba(34,211,238,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.08) 1px, transparent 1px);
-                 background-size: 22px 22px;">
-              <div style="display:flex; gap:12px; align-items:center; border-bottom:1px solid rgba(34,211,238,0.35); padding-bottom:14px; margin-bottom:14px;">
-                <div style="width:56px;height:56px;border-radius:10px;background:#131a30;border:2px solid #22d3ee;box-shadow:0 0 12px rgba(34,211,238,.5);"></div>
-                <div><div style="font-weight:800;font-size:1.15rem;color:#7ff0ff;text-shadow:0 0 8px rgba(34,211,238,.5);">Amara Chukwu</div><div style="color:#c893ff;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;">Product Designer</div></div>
-              </div>
-              <div style="height:6px;width:26%;background:#22d3ee;border-radius:4px;margin-bottom:10px;"></div>
-              <div style="padding:8px 10px;border-radius:8px;background:rgba(144,97,249,0.1);border:1px solid rgba(144,97,249,0.3);margin-bottom:8px;">
-                <div style="height:6px;width:70%;background:rgba(255,255,255,.6);border-radius:4px;"></div>
-              </div>
-              <div style="padding:8px 10px;border-radius:8px;background:rgba(144,97,249,0.1);border:1px solid rgba(144,97,249,0.3);">
-                <div style="height:6px;width:55%;background:rgba(255,255,255,.6);border-radius:4px;"></div>
-              </div>
-            </div>
-          </div>
-          <div class="template-card-body">
-            <div><h4>Neon <span class="tag-muted" style="font-size:.7rem;">✨ New</span></h4><span>Futuristic dark cyberpunk</span></div>
-            <button class="btn btn-primary btn-sm" data-select-template="neon">Select</button>
-          </div>
-        </div>
-
-        <div class="card template-card hoverable">
-          <div class="template-card-thumb">
-            <div class="mini-cv" style="padding:28px; font-family:'Sora', sans-serif;">
-              <div style="display:flex; gap:12px; align-items:center; padding:16px; border-radius:14px;
-                   background:linear-gradient(120deg,#eaf0ff 0%,#f3ecff 45%,#ffeef8 100%); border:1px solid #ece6fb; margin-bottom:16px;">
-                <div style="width:56px;height:56px;border-radius:50%;background:#fff;box-shadow:0 6px 14px rgba(144,97,249,.25);"></div>
-                <div><div style="font-weight:800;font-size:1.15rem;color:#2a2350;">Amara Chukwu</div><div style="color:#7c5cff;font-size:.72rem;font-weight:600;">Product Designer</div></div>
-              </div>
-              <div style="height:6px;width:34%;background:linear-gradient(90deg,#4f7cff,#9061f9,#ff6fd8);border-radius:4px;margin-bottom:12px;"></div>
-              <div style="height:6px;width:88%;background:#f1eefc;border-radius:4px;margin-bottom:8px;"></div>
-              <div style="height:6px;width:65%;background:#f1eefc;border-radius:4px;"></div>
-            </div>
-          </div>
-          <div class="template-card-body">
-            <div><h4>Aurora <span class="tag-muted" style="font-size:.7rem;">✨ New</span></h4><span>Futuristic holographic light</span></div>
-            <button class="btn btn-primary btn-sm" data-select-template="aurora">Select</button>
-          </div>
-        </div>
+        <div class="grid-3" id="freeTemplatesGrid"></div>
       </div>
+
+      <div class="template-gallery-section">
+        <div class="template-gallery-head">
+          <h3>Pro Templates</h3>
+          <span class="pro-badge"><i class="fa-solid fa-crown"></i> Pro</span>
+        </div>
+        <div class="grid-3" id="proTemplatesGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="proUpgradeModal">
+  <div class="modal-box">
+    <div class="pro-modal-icon"><i class="fa-solid fa-crown"></i></div>
+    <h3>Premium Template</h3>
+    <p>This template will be available with CVGEN Pro. Unlock premium templates and upcoming AI-powered tools.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="proModalClose">Maybe Later</button>
+      <a href="pro.html" class="btn btn-primary">View Pro Plans</a>
     </div>
   </div>
 </div>

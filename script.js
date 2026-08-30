@@ -78,7 +78,9 @@ function normalizeUser(supabaseUser) {
     id: supabaseUser.id,
     name: meta.full_name || (supabaseUser.email ? supabaseUser.email.split('@')[0] : 'there'),
     email: supabaseUser.email,
-    createdAt: supabaseUser.created_at
+    createdAt: supabaseUser.created_at,
+    plan: 'free',       // enriched from profiles.plan in requireAuth() — 'free' until proven otherwise
+    aiNotifyOptIn: false
   };
 }
 
@@ -181,6 +183,20 @@ async function requireAuth() {
     return null;
   }
   currentUser = normalizeUser(user);
+
+  // Pull plan / notify-preference from the profiles table (not part of the
+  // auth user object itself). Defaults already set by normalizeUser() above
+  // if this row is somehow missing, so a failure here never blocks login.
+  const { data: profileRow } = await supabaseClient
+    .from('profiles')
+    .select('plan, ai_notify_opt_in')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (profileRow) {
+    currentUser.plan = profileRow.plan || 'free';
+    currentUser.aiNotifyOptIn = !!profileRow.ai_notify_opt_in;
+  }
+
   return currentUser;
 }
 
@@ -190,6 +206,86 @@ async function redirectIfLoggedIn() {
   if (user) {
     window.location.href = 'dashboard.html';
   }
+}
+
+/* ---------------------------------------------------------
+   1b. PRO / SUBSCRIPTION — template catalog & feature gating
+   (UI + gating only — no real billing yet. See PRO_FEATURES.md)
+   --------------------------------------------------------- */
+
+/** Every CV template the app knows about. 'tier' is 'free' or 'pro'. */
+const TEMPLATE_CATALOG = [
+  { id: 'professional', name: 'Classic Professional', description: 'Clean corporate design, ATS-friendly.', category: 'Business', tier: 'free', hasLiveMockup: true },
+  { id: 'modern', name: 'Modern', description: 'Bold sidebar layout with an accent color.', category: 'Technology', tier: 'free', hasLiveMockup: true },
+  { id: 'minimal', name: 'Minimal', description: 'Elegant black & white, distraction-free.', category: 'Graduate', tier: 'free', hasLiveMockup: true },
+  { id: 'classic', name: 'Traditional ATS', description: 'Ultra-clean single column, built for ATS parsing.', category: 'Business', tier: 'free', hasLiveMockup: false },
+  { id: 'tech', name: 'Tech Focus', description: 'Skill-forward layout suited to engineering roles.', category: 'Technology', tier: 'free', hasLiveMockup: false },
+  { id: 'neon', name: 'Neon', description: 'Futuristic dark cyberpunk styling.', category: 'Creative', tier: 'pro', hasLiveMockup: true },
+  { id: 'aurora', name: 'Aurora', description: 'Holographic gradient, softly futuristic.', category: 'Creative', tier: 'pro', hasLiveMockup: true },
+  { id: 'executive', name: 'Modern Executive', description: 'Premium two-column layout with a photo banner.', category: 'Business', tier: 'pro', hasLiveMockup: false },
+  { id: 'creative-folio', name: 'Creative Portfolio', description: 'Bold color blocks for design & creative roles.', category: 'Creative', tier: 'pro', hasLiveMockup: false },
+  { id: 'graduate-entry', name: 'Graduate Entry', description: 'Education-forward layout for new graduates.', category: 'Graduate', tier: 'pro', hasLiveMockup: false },
+  { id: 'executive-elite', name: 'Executive Elite', description: 'Dark premium styling with gold accents.', category: 'Business', tier: 'pro', hasLiveMockup: false }
+];
+
+function getTemplateMeta(id) {
+  return TEMPLATE_CATALOG.find((t) => t.id === id) || TEMPLATE_CATALOG[0];
+}
+
+/** True once real subscriptions exist and this user has one. For now: reads profiles.plan. */
+function isProUser() {
+  return !!(currentUser && currentUser.plan === 'pro');
+}
+
+function showProUpgradeModal() {
+  const modal = document.getElementById('proUpgradeModal');
+  if (modal) modal.classList.add('show');
+}
+
+function hideProUpgradeModal() {
+  const modal = document.getElementById('proUpgradeModal');
+  if (modal) modal.classList.remove('show');
+}
+
+/** Runs onAllowed() if the user is Pro; otherwise shows the upgrade modal. */
+function requirePro(onAllowed) {
+  if (isProUser()) {
+    onAllowed();
+  } else {
+    showProUpgradeModal();
+  }
+}
+
+function initProUpgradeModal() {
+  const modal = document.getElementById('proUpgradeModal');
+  if (!modal) return;
+  const closeBtn = document.getElementById('proModalClose');
+  if (closeBtn) closeBtn.addEventListener('click', hideProUpgradeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) hideProUpgradeModal(); });
+}
+
+/** "Notify Me" on the AI Builder Coming Soon page — stores the opt-in on the user's profile row. */
+async function notifyMeAI() {
+  if (!currentUser) return;
+  const btn = document.getElementById('aiNotifyBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...'; }
+
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update({ ai_notify_opt_in: true })
+    .eq('id', currentUser.id);
+
+  if (error) {
+    console.error('notifyMeAI error:', error);
+    showToast('Could not save your preference — try again', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-bell"></i> Notify Me'; }
+    return;
+  }
+
+  currentUser.aiNotifyOptIn = true;
+  const confirmBox = document.getElementById('aiNotifyConfirm');
+  if (btn) btn.style.display = 'none';
+  if (confirmBox) confirmBox.style.display = 'flex';
 }
 
 /* ---------------------------------------------------------
@@ -756,6 +852,10 @@ async function initDashboardPage() {
   if (completeEl) completeEl.textContent = completed;
 
   renderRecentCVs(cvs);
+
+  // Already a Pro user (e.g. via the dev-only test override) — no need to upsell.
+  const promoCard = document.getElementById('proPromoCard');
+  if (promoCard && isProUser()) promoCard.style.display = 'none';
 }
 
 function renderRecentCVs(cvs) {
@@ -969,12 +1069,122 @@ async function initSettingsPage() {
 /* =========================================================
    14. PAGE INIT: TEMPLATES GALLERY
    ========================================================= */
+
+/** Live mini-mockups for templates that already exist as real, working CV templates. */
+const TEMPLATE_LIVE_THUMBS = {
+  professional: `<div class="mini-cv" style="padding:30px; font-family:'Sora', sans-serif;">
+    <div style="display:flex; gap:14px; align-items:center; border-bottom:3px solid #1c2233; padding-bottom:16px; margin-bottom:16px;">
+      <div style="width:70px;height:70px;border-radius:8px;background:#dde3f5;"></div>
+      <div><div style="font-weight:800;font-size:1.3rem;">Amara Chukwu</div><div style="color:#666;font-size:.9rem;">Product Designer</div></div>
+    </div>
+    <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+    <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;margin-bottom:16px;"></div>
+    <div style="height:6px;width:30%;background:#4f7cff;border-radius:4px;margin-bottom:10px;"></div>
+    <div style="height:8px;width:80%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+  </div>`,
+  modern: `<div class="mini-cv" style="display:flex;height:100%;">
+    <div style="width:36%; background:linear-gradient(160deg,#232a4d,#171b33); padding:24px 16px;">
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 14px;"></div>
+      <div style="height:8px;width:80%;background:rgba(255,255,255,0.3);border-radius:4px;margin:0 auto 20px;"></div>
+      <div style="height:6px;width:60%;background:rgba(255,255,255,0.2);border-radius:4px;margin-bottom:8px;"></div>
+      <div style="height:6px;width:70%;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
+    </div>
+    <div style="flex:1; padding:24px;">
+      <div style="height:8px;width:40%;background:#4f7cff;border-radius:4px;margin-bottom:14px;"></div>
+      <div style="height:8px;width:90%;background:#eef0f6;border-radius:4px;margin-bottom:8px;"></div>
+      <div style="height:8px;width:70%;background:#eef0f6;border-radius:4px;"></div>
+    </div>
+  </div>`,
+  minimal: `<div class="mini-cv" style="padding:34px; text-align:center; font-family:Georgia, serif;">
+    <div style="width:60px;height:60px;border-radius:50%;background:#ddd;margin:0 auto 12px;"></div>
+    <div style="font-size:1.4rem;letter-spacing:.03em;">Amara Chukwu</div>
+    <div style="color:#666;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:18px;">Product Designer</div>
+    <div style="height:1px;width:40px;background:#111;margin:0 auto 14px;"></div>
+    <div style="height:6px;width:60%;background:#eee;border-radius:4px;margin:0 auto 8px;"></div>
+    <div style="height:6px;width:40%;background:#eee;border-radius:4px;margin:0 auto;"></div>
+  </div>`,
+  neon: `<div class="mini-cv" style="padding:28px; font-family:'Sora', sans-serif; background:#0a0e1a; color:#d7deff; height:100%;
+       background-image: linear-gradient(rgba(34,211,238,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.08) 1px, transparent 1px);
+       background-size: 22px 22px;">
+    <div style="display:flex; gap:12px; align-items:center; border-bottom:1px solid rgba(34,211,238,0.35); padding-bottom:14px; margin-bottom:14px;">
+      <div style="width:56px;height:56px;border-radius:10px;background:#131a30;border:2px solid #22d3ee;box-shadow:0 0 12px rgba(34,211,238,.5);"></div>
+      <div><div style="font-weight:800;font-size:1.15rem;color:#7ff0ff;text-shadow:0 0 8px rgba(34,211,238,.5);">Amara Chukwu</div><div style="color:#c893ff;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;">Product Designer</div></div>
+    </div>
+    <div style="height:6px;width:26%;background:#22d3ee;border-radius:4px;margin-bottom:10px;"></div>
+    <div style="padding:8px 10px;border-radius:8px;background:rgba(144,97,249,0.1);border:1px solid rgba(144,97,249,0.3);margin-bottom:8px;">
+      <div style="height:6px;width:70%;background:rgba(255,255,255,.6);border-radius:4px;"></div>
+    </div>
+    <div style="padding:8px 10px;border-radius:8px;background:rgba(144,97,249,0.1);border:1px solid rgba(144,97,249,0.3);">
+      <div style="height:6px;width:55%;background:rgba(255,255,255,.6);border-radius:4px;"></div>
+    </div>
+  </div>`,
+  aurora: `<div class="mini-cv" style="padding:28px; font-family:'Sora', sans-serif;">
+    <div style="display:flex; gap:12px; align-items:center; padding:16px; border-radius:14px;
+         background:linear-gradient(120deg,#eaf0ff 0%,#f3ecff 45%,#ffeef8 100%); border:1px solid #ece6fb; margin-bottom:16px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:#fff;box-shadow:0 6px 14px rgba(144,97,249,.25);"></div>
+      <div><div style="font-weight:800;font-size:1.15rem;color:#2a2350;">Amara Chukwu</div><div style="color:#7c5cff;font-size:.72rem;font-weight:600;">Product Designer</div></div>
+    </div>
+    <div style="height:6px;width:34%;background:linear-gradient(90deg,#4f7cff,#9061f9,#ff6fd8);border-radius:4px;margin-bottom:12px;"></div>
+    <div style="height:6px;width:88%;background:#f1eefc;border-radius:4px;margin-bottom:8px;"></div>
+    <div style="height:6px;width:65%;background:#f1eefc;border-radius:4px;"></div>
+  </div>`
+};
+
+const TEMPLATE_PLACEHOLDER_ICONS = {
+  classic: 'fa-file-lines', tech: 'fa-code', executive: 'fa-briefcase',
+  'creative-folio': 'fa-palette', 'graduate-entry': 'fa-graduation-cap', 'executive-elite': 'fa-crown'
+};
+
+function templateThumbHTML(tpl) {
+  if (TEMPLATE_LIVE_THUMBS[tpl.id]) return TEMPLATE_LIVE_THUMBS[tpl.id];
+  const icon = TEMPLATE_PLACEHOLDER_ICONS[tpl.id] || 'fa-file';
+  return `<div class="tpl-placeholder-thumb"><i class="fa-solid ${icon}"></i><span>${escapeHTML(tpl.name)}</span></div>`;
+}
+
+function templateCardHTML(tpl) {
+  const thumb = templateThumbHTML(tpl);
+  if (tpl.tier === 'free') {
+    return `
+      <div class="card template-card hoverable">
+        <div class="template-card-thumb">${thumb}</div>
+        <div class="template-card-body">
+          <div><h4>${escapeHTML(tpl.name)}</h4><span>${escapeHTML(tpl.description)}</span></div>
+          <button class="btn btn-primary btn-sm" data-select-template="${tpl.id}">Use Template</button>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="card template-card template-card-locked" data-locked-template="${tpl.id}">
+      <div class="template-card-thumb">
+        ${thumb}
+        <div class="template-lock-overlay">
+          <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+          <span>Premium Template</span>
+          <small>Unlock with CVGEN Pro</small>
+        </div>
+      </div>
+      <div class="template-card-body">
+        <div><h4>${escapeHTML(tpl.name)}</h4><span>${escapeHTML(tpl.description)}</span></div>
+        <span class="pro-badge"><i class="fa-solid fa-crown"></i> Pro</span>
+      </div>
+    </div>`;
+}
+
 async function initTemplatesPage() {
   const user = await requireAuth();
   if (!user) return;
   applySettings();
   initSidebar();
   populateSidebarUser();
+  initProUpgradeModal();
+
+  const freeContainer = document.getElementById('freeTemplatesGrid');
+  const proContainer = document.getElementById('proTemplatesGrid');
+  const freeTpls = TEMPLATE_CATALOG.filter((t) => t.tier === 'free');
+  const proTpls = TEMPLATE_CATALOG.filter((t) => t.tier === 'pro');
+
+  if (freeContainer) freeContainer.innerHTML = freeTpls.map(templateCardHTML).join('');
+  if (proContainer) proContainer.innerHTML = proTpls.map(templateCardHTML).join('');
 
   document.querySelectorAll('[data-select-template]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -982,6 +1192,55 @@ async function initTemplatesPage() {
       window.location.href = 'cv-builder.html?template=' + encodeURIComponent(tpl);
     });
   });
+
+  document.querySelectorAll('[data-locked-template]').forEach(card => {
+    card.addEventListener('click', () => showProUpgradeModal());
+  });
+}
+
+/* =========================================================
+   14b. PAGE INIT: AI BUILDER (Coming Soon)
+   ========================================================= */
+async function initAiBuilderPage() {
+  const user = await requireAuth();
+  if (!user) return;
+  applySettings();
+  initSidebar();
+  populateSidebarUser();
+
+  const notifyBtn = document.getElementById('aiNotifyBtn');
+  const confirmBox = document.getElementById('aiNotifyConfirm');
+  if (user.aiNotifyOptIn) {
+    if (notifyBtn) notifyBtn.style.display = 'none';
+    if (confirmBox) confirmBox.style.display = 'flex';
+  } else if (notifyBtn) {
+    notifyBtn.addEventListener('click', notifyMeAI);
+  }
+}
+
+/* =========================================================
+   14c. PAGE INIT: PRO / PRICING
+   ========================================================= */
+async function initProPage() {
+  const user = await requireAuth();
+  if (!user) return;
+  applySettings();
+  initSidebar();
+  populateSidebarUser();
+
+  const upgradeBtn = document.getElementById('upgradeProBtn');
+  if (isProUser()) {
+    if (upgradeBtn) {
+      upgradeBtn.textContent = 'Current Plan';
+      upgradeBtn.disabled = true;
+      upgradeBtn.classList.remove('btn-primary');
+      upgradeBtn.classList.add('btn-secondary');
+    }
+  } else if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', () => {
+      showToast('CVGEN Pro is coming soon.', 'info');
+    });
+  }
 }
 
 /* =========================================================
@@ -1003,7 +1262,18 @@ async function initBuilderPage() {
   const cvId = getParam('id');
   const tplParam = getParam('template');
   currentCV = await loadCV(cvId);
-  if (tplParam) currentCV.template = tplParam;
+  if (tplParam) {
+    const meta = getTemplateMeta(tplParam);
+    if (meta.tier === 'pro' && !isProUser()) {
+      showToast('That template needs CVGEN Pro — showing Professional instead', 'info');
+      currentCV.template = 'professional';
+    } else {
+      currentCV.template = tplParam;
+    }
+  }
+
+  renderBuilderTemplateSwitch();
+  initProUpgradeModal();
 
   // Populate form fields from currentCV
   populateFormFromCV();
@@ -1057,14 +1327,7 @@ async function initBuilderPage() {
   document.getElementById('addSkillBtn').addEventListener('click', addSkill);
   document.getElementById('addLanguageBtn').addEventListener('click', addLanguage);
 
-  // Template switch buttons in preview toolbar
-  document.querySelectorAll('.template-switch button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentCV.template = btn.getAttribute('data-template');
-      setActiveTemplateSwitch();
-      updatePreview();
-    });
-  });
+  // Template switch buttons in preview toolbar (rendered dynamically — see renderBuilderTemplateSwitch)
 
   // Action buttons
   document.getElementById('saveCVBtn').addEventListener('click', async () => {
@@ -1533,6 +1796,33 @@ function removeReference(id) {
 /* ---------------------------------------------------------
    16. LIVE PREVIEW RENDERING
    --------------------------------------------------------- */
+/** Builds the row of template-switch buttons in the builder's preview toolbar, gated by plan. */
+function renderBuilderTemplateSwitch() {
+  const wrap = document.getElementById('templateSwitchButtons');
+  if (!wrap) return;
+
+  wrap.innerHTML = TEMPLATE_CATALOG.map((tpl) => {
+    const lockIcon = tpl.tier === 'pro' ? ' <i class="fa-solid fa-lock" style="font-size:.7em;"></i>' : '';
+    return `<button type="button" data-template="${tpl.id}" data-tier="${tpl.tier}">${escapeHTML(tpl.name)}${lockIcon}</button>`;
+  }).join('');
+
+  wrap.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tplId = btn.getAttribute('data-template');
+      const meta = getTemplateMeta(tplId);
+      if (meta.tier === 'pro' && !isProUser()) {
+        showProUpgradeModal();
+        return;
+      }
+      currentCV.template = tplId;
+      setActiveTemplateSwitch();
+      updatePreview();
+    });
+  });
+
+  setActiveTemplateSwitch();
+}
+
 function setActiveTemplateSwitch() {
   document.querySelectorAll('.template-switch button').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('data-template') === currentCV.template);
@@ -1767,6 +2057,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     case 'dashboard': await initDashboardPage(); break;
     case 'builder': await initBuilderPage(); break;
     case 'templates': await initTemplatesPage(); break;
+    case 'ai-builder': await initAiBuilderPage(); break;
+    case 'pro': await initProPage(); break;
     case 'mycvs': await initMyCVsPage(); break;
     case 'profile': await initProfilePage(); break;
     case 'settings': await initSettingsPage(); break;
