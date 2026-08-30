@@ -83,6 +83,24 @@ function normalizeUser(supabaseUser) {
 }
 
 async function getSupabaseSessionUser() {
+  // Right after a Google (or any OAuth) redirect, the session tokens sit in
+  // the URL hash — supabase-js needs a moment to detect and store them
+  // before getSession() will see anything. Without this wait, a fast check
+  // (like requireAuth() on page load) can run first, see "not logged in
+  // yet," and bounce back to login before the library catches up. If we can
+  // see an OAuth hash, wait briefly for a real SIGNED_IN event first.
+  if (window.location.hash.includes('access_token')) {
+    await new Promise((resolve) => {
+      const { data: sub } = supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          sub.subscription.unsubscribe();
+          resolve();
+        }
+      });
+      setTimeout(resolve, 2500); // safety net so this never hangs if something's genuinely wrong
+    });
+  }
+
   const { data, error } = await supabaseClient.auth.getSession();
   if (error) {
     console.error('getSession error:', error);
