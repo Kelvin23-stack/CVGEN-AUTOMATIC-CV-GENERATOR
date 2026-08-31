@@ -283,6 +283,24 @@ async function notifyMeAI() {
   }
 
   currentUser.aiNotifyOptIn = true;
+
+  // Send a real confirmation email via EmailJS, if configured. This is
+  // best-effort: the opt-in above already succeeded and is what actually
+  // matters, so an unconfigured or failed send should never block the
+  // on-screen confirmation the person is about to see.
+  if (window.emailjs && typeof EMAILJS_SERVICE_ID === 'string' && !EMAILJS_SERVICE_ID.startsWith('PASTE_')) {
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: currentUser.email,
+        to_name: currentUser.name
+      });
+    } catch (emailError) {
+      console.error('EmailJS send error:', emailError);
+    }
+  } else {
+    console.warn('CVGEN: EmailJS not configured — opt-in saved, but no confirmation email sent. See EMAILJS_SETUP.md.');
+  }
+
   const confirmBox = document.getElementById('aiNotifyConfirm');
   if (btn) btn.style.display = 'none';
   if (confirmBox) confirmBox.style.display = 'flex';
