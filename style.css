@@ -1068,3 +1068,35 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 }
 .tpl-placeholder-thumb i { font-size: 1.6rem; color: var(--accent-purple-light); }
 .tpl-placeholder-thumb span { font-size: 0.8rem; font-weight: 600; }
+
+/* =========================================================
+   AI FEATURES — buttons, result preview, cover letter modal
+   ========================================================= */
+.ai-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ai-btn { position: relative; padding-right: 10px; }
+.ai-btn-badge {
+  font-size: 0.55rem; padding: 1px 6px; margin-left: 6px;
+}
+/* Once a user is Pro, hide the little crown badge on each AI button — no need to advertise Pro to someone who already has it */
+body.is-pro .ai-btn-badge { display: none; }
+
+.ai-result-box {
+  margin-top: 12px; padding: 14px 16px; border-radius: var(--radius-sm);
+  background: rgba(79,124,255,0.06); border: 1px solid rgba(79,124,255,0.25);
+}
+.ai-result-label {
+  font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--accent-blue-light); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.ai-result-box p { font-size: 0.86rem; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap; margin-bottom: 12px; }
+.ai-result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.suggested-skill-chip { cursor: pointer; border-style: dashed; }
+.suggested-skill-chip:hover { border-color: var(--accent-blue); background: rgba(79,124,255,0.1); }
+.suggested-skill-chip .rm { background: rgba(79,124,255,0.15); color: var(--accent-blue-light); }
+
+.cover-letter-modal-box { max-width: 480px; }
+.cover-letter-modal-box textarea {
+  background: var(--bg-card-light); border: 1px solid var(--border-medium); border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 0.85rem; color: var(--text-primary); line-height: 1.6; resize: vertical;
+}

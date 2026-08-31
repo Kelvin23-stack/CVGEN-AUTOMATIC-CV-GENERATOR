@@ -72,6 +72,7 @@
       </div>
       <div class="builder-actions">
         <a href="#" id="chooseTemplateLink" class="btn btn-ghost btn-sm"><i class="fa-solid fa-swatchbook"></i> Choose Template</a>
+        <button class="btn btn-ghost btn-sm" id="coverLetterBtn"><i class="fa-solid fa-envelope-open-text"></i> Cover Letter <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
         <button class="btn btn-secondary btn-sm" id="saveCVBtn"><i class="fa-solid fa-floppy-disk"></i> Save CV</button>
         <button class="btn btn-secondary btn-sm" id="printCVBtn"><i class="fa-solid fa-print"></i> Print</button>
         <button class="btn btn-primary btn-sm" id="downloadPDFBtn"><i class="fa-solid fa-download"></i> Download PDF</button>
@@ -133,6 +134,20 @@
               <label>Professional Summary</label>
               <textarea id="summary" rows="5" placeholder="A short, compelling paragraph highlighting your experience, key skills and career goals..."></textarea>
             </div>
+            <div class="ai-toolbar">
+              <button type="button" class="btn btn-ghost btn-sm ai-btn" id="aiSummaryBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Summary <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
+              <button type="button" class="btn btn-ghost btn-sm ai-btn" id="aiObjectiveBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Objective <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
+              <button type="button" class="btn btn-ghost btn-sm ai-btn" id="aiImproveSummaryBtn"><i class="fa-solid fa-broom"></i> Improve My Text <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
+            </div>
+            <div class="ai-result-box" id="summaryAIResult" style="display:none;">
+              <div class="ai-result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> AI suggestion</div>
+              <p id="summaryAIResultText"></p>
+              <div class="ai-result-actions">
+                <button type="button" class="btn btn-primary btn-sm" id="summaryAIUseBtn">Use This</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="summaryAIRegenBtn">Regenerate</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="summaryAIDismissBtn">Dismiss</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -189,6 +204,10 @@
               <button type="button" class="btn btn-primary btn-sm" id="addSkillBtn"><i class="fa-solid fa-plus"></i></button>
             </div>
             <div class="chip-list" id="skillsChipList"></div>
+            <div class="ai-toolbar" style="margin-top:14px;">
+              <button type="button" class="btn btn-ghost btn-sm ai-btn" id="aiSkillsBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Suggest Skills <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
+            </div>
+            <div class="chip-list" id="skillsAISuggestions"></div>
           </div>
         </div>
 
@@ -323,6 +342,34 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="proModalClose">Maybe Later</button>
       <a href="pro.html" class="btn btn-primary">View Pro Plans</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="coverLetterModal">
+  <div class="modal-box cover-letter-modal-box">
+    <div class="pro-modal-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+    <h3>AI Cover Letter</h3>
+    <p>Generated from your CV's summary and experience — always double-check before sending.</p>
+
+    <div class="form-row">
+      <div class="field no-icon"><label>Target Job Title</label><input type="text" id="clTargetTitle" placeholder="Product Designer"></div>
+      <div class="field no-icon"><label>Target Company</label><input type="text" id="clTargetCompany" placeholder="Acme Corp"></div>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-block" id="clGenerateBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Cover Letter</button>
+
+    <div class="ai-result-box" id="clResultBox" style="display:none; margin-top:16px;">
+      <div class="ai-result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Your cover letter</div>
+      <textarea id="clResultText" rows="10" style="width:100%; margin-top:8px;"></textarea>
+      <div class="ai-result-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="clCopyBtn"><i class="fa-solid fa-copy"></i> Copy</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="clRegenBtn">Regenerate</button>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-secondary" id="clCloseBtn">Close</button>
     </div>
   </div>
 </div>

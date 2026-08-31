@@ -56,9 +56,9 @@ Go to [emailjs.com](https://www.emailjs.com) → sign up (free tier: 200 emails/
 Open **`emailjs-config.js`** in this project and paste in your three values:
 
 ```js
-const EMAILJS_PUBLIC_KEY = 'HeCcTadiEyuN49LTM';
-const EMAILJS_SERVICE_ID = 'service_r345emn';
-const EMAILJS_TEMPLATE_ID = 'template_6dn0wwk';
+const EMAILJS_PUBLIC_KEY = 'your-public-key';
+const EMAILJS_SERVICE_ID = 'service_abc1234';
+const EMAILJS_TEMPLATE_ID = 'template_xyz789';
 ```
 
 That's the entire file — nothing else needs editing.

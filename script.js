@@ -307,6 +307,66 @@ async function notifyMeAI() {
 }
 
 /* ---------------------------------------------------------
+   1c. AI FEATURES — calls the "ai" Supabase Edge Function
+   (Edge Function verifies auth + Pro status server-side; this
+   is just the client-side calling helper + UI wiring)
+   --------------------------------------------------------- */
+
+/**
+ * Calls the AI Edge Function. Throws on any failure — callers should
+ * wrap this in try/catch and show the error via showToast().
+ * Returns { result, suggestions } on success.
+ */
+async function callAI(feature, input) {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const session = sessionData && sessionData.session;
+  if (!session) throw new Error('You need to be signed in to use AI features.');
+
+  const res = await fetch(SUPABASE_URL + '/functions/v1/ai', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token
+    },
+    body: JSON.stringify({ feature: feature, input: input })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || 'AI request failed. Please try again.');
+    err.status = res.status;
+    err.code = data.code;
+    throw err;
+  }
+  return data;
+}
+
+/** Shared helper: runs an AI call with a button loading state, gated by Pro. */
+async function runAIAction(btn, feature, input, onSuccess) {
+  if (!isProUser()) {
+    showProUpgradeModal();
+    return;
+  }
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  try {
+    const data = await callAI(feature, input);
+    onSuccess(data);
+  } catch (err) {
+    console.error('AI action error:', err);
+    if (err.code === 'PRO_REQUIRED') {
+      showProUpgradeModal();
+    } else {
+      showToast(err.message || 'AI request failed. Please try again.', 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
+/* ---------------------------------------------------------
    2. CV DATA MODEL (Supabase tables: cvs + experiences, education,
       skills, certifications, languages, "references")
    --------------------------------------------------------- */
@@ -686,6 +746,7 @@ function populateSidebarUser() {
   nameEls.forEach(el => el.textContent = user.name);
   emailEls.forEach(el => el.textContent = user.email);
   initialEls.forEach(el => el.textContent = user.name.trim().charAt(0).toUpperCase());
+  document.body.classList.toggle('is-pro', isProUser());
 }
 
 /* Fade-in on scroll (landing page sections) */
@@ -1379,9 +1440,157 @@ async function initBuilderPage() {
     document.getElementById('templatesPanel').scrollIntoView({ behavior: 'smooth' });
   });
 
+  initSummaryAIButtons();
+  initSkillsAIButton();
+  initCoverLetterModal();
+
   if (getParam('autodownload') === '1') {
     setTimeout(downloadPDF, 600);
   }
+}
+
+/** Wires the Generate Summary / Generate Objective / Improve My Text buttons + result box. */
+function initSummaryAIButtons() {
+  const resultBox = document.getElementById('summaryAIResult');
+  const resultText = document.getElementById('summaryAIResultText');
+  const useBtn = document.getElementById('summaryAIUseBtn');
+  const regenBtn = document.getElementById('summaryAIRegenBtn');
+  const dismissBtn = document.getElementById('summaryAIDismissBtn');
+  let lastFeature = null;
+  let lastInput = null;
+
+  function showResult(data) {
+    resultText.textContent = data.result;
+    resultBox.style.display = 'block';
+  }
+
+  function run(btn, feature, buildInput) {
+    const input = buildInput();
+    if (!input) return;
+    lastFeature = feature;
+    lastInput = input;
+    runAIAction(btn, feature, input, showResult);
+  }
+
+  const summaryBtn = document.getElementById('aiSummaryBtn');
+  if (summaryBtn) summaryBtn.addEventListener('click', () => run(summaryBtn, 'professional-summary', () => {
+    const title = document.getElementById('profTitle').value.trim();
+    const experienceSummary = currentCV.experience.map((e) => `${e.title} at ${e.company}: ${e.description}`).join(' | ');
+    const skills = currentCV.skills.map((s) => s.name).join(', ');
+    if (!title && !experienceSummary) { showToast('Add a job title or some experience first', 'info'); return null; }
+    return { title, experienceSummary, skills };
+  }));
+
+  const objectiveBtn = document.getElementById('aiObjectiveBtn');
+  if (objectiveBtn) objectiveBtn.addEventListener('click', () => run(objectiveBtn, 'career-objective', () => {
+    const title = document.getElementById('profTitle').value.trim();
+    const skills = currentCV.skills.map((s) => s.name).join(', ');
+    if (!title) { showToast('Add your professional title first', 'info'); return null; }
+    return { title, targetRole: title, skills };
+  }));
+
+  const improveBtn = document.getElementById('aiImproveSummaryBtn');
+  if (improveBtn) improveBtn.addEventListener('click', () => run(improveBtn, 'improve-text', () => {
+    const text = document.getElementById('summary').value.trim();
+    if (!text) { showToast('Write a draft summary first, then let AI improve it', 'info'); return null; }
+    return { text };
+  }));
+
+  if (useBtn) useBtn.addEventListener('click', () => {
+    document.getElementById('summary').value = resultText.textContent;
+    syncFormToCV();
+    updatePreview();
+    resultBox.style.display = 'none';
+    showToast('Summary updated', 'success');
+  });
+  if (regenBtn) regenBtn.addEventListener('click', () => {
+    if (!lastFeature || !lastInput) return;
+    const btn = lastFeature === 'improve-text' ? improveBtn : (lastFeature === 'career-objective' ? objectiveBtn : summaryBtn);
+    runAIAction(btn, lastFeature, lastInput, showResult);
+  });
+  if (dismissBtn) dismissBtn.addEventListener('click', () => { resultBox.style.display = 'none'; });
+}
+
+/** Wires the "Suggest Skills" button — clicking a suggested chip adds it to the CV. */
+function initSkillsAIButton() {
+  const btn = document.getElementById('aiSkillsBtn');
+  const suggestionsWrap = document.getElementById('skillsAISuggestions');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const title = document.getElementById('profTitle').value.trim();
+    const experienceSummary = currentCV.experience.map((e) => `${e.title}: ${e.description}`).join(' | ');
+    if (!title && !experienceSummary) { showToast('Add a job title or some experience first', 'info'); return; }
+
+    runAIAction(btn, 'skills-suggestions', { title, experienceSummary }, (data) => {
+      const existingNames = new Set(currentCV.skills.map((s) => s.name.toLowerCase()));
+      const fresh = (data.suggestions || []).filter((s) => !existingNames.has(s.toLowerCase()));
+      suggestionsWrap.innerHTML = fresh.map((name) => `
+        <div class="chip suggested-skill-chip" data-skill-name="${escapeHTML(name)}">
+          <span>${escapeHTML(name)}</span>
+          <span class="rm"><i class="fa-solid fa-plus"></i></span>
+        </div>`).join('') || '<span class="tag-muted">No new suggestions — your skills list already covers the obvious ones.</span>';
+
+      suggestionsWrap.querySelectorAll('.suggested-skill-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const name = chip.getAttribute('data-skill-name');
+          currentCV.skills.push({ id: uid('skill'), name: name, level: 'Intermediate' });
+          renderSkillChips();
+          updatePreview();
+          chip.remove();
+        });
+      });
+    });
+  });
+}
+
+/** Wires the Cover Letter modal: open, generate, copy, close. */
+function initCoverLetterModal() {
+  const openBtn = document.getElementById('coverLetterBtn');
+  const modal = document.getElementById('coverLetterModal');
+  const closeBtn = document.getElementById('clCloseBtn');
+  const generateBtn = document.getElementById('clGenerateBtn');
+  const regenBtn = document.getElementById('clRegenBtn');
+  const copyBtn = document.getElementById('clCopyBtn');
+  const resultBox = document.getElementById('clResultBox');
+  const resultText = document.getElementById('clResultText');
+  if (!openBtn || !modal) return;
+
+  openBtn.addEventListener('click', () => {
+    if (!isProUser()) { showProUpgradeModal(); return; }
+    modal.classList.add('show');
+  });
+  closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
+
+  function generate() {
+    const targetJobTitle = document.getElementById('clTargetTitle').value.trim();
+    const targetCompany = document.getElementById('clTargetCompany').value.trim();
+    const cvSummary = [
+      currentCV.summary,
+      currentCV.experience.map((e) => `${e.title} at ${e.company}: ${e.description}`).join(' | ')
+    ].filter(Boolean).join('\n');
+
+    if (!cvSummary && !targetJobTitle) {
+      showToast('Add a summary or some experience to your CV first', 'info');
+      return;
+    }
+    runAIAction(generateBtn, 'cover-letter', { cvSummary, targetJobTitle, targetCompany }, (data) => {
+      resultText.value = data.result;
+      resultBox.style.display = 'block';
+    });
+  }
+
+  generateBtn.addEventListener('click', generate);
+  if (regenBtn) regenBtn.addEventListener('click', generate);
+  if (copyBtn) copyBtn.addEventListener('click', () => {
+    resultText.select();
+    navigator.clipboard.writeText(resultText.value).then(() => {
+      showToast('Cover letter copied', 'success');
+    }).catch(() => {
+      showToast('Could not copy — select and copy manually', 'error');
+    });
+  });
 }
 
 function populateFormFromCV() {
@@ -1600,7 +1809,55 @@ function renderExperienceEntries() {
         <div class="field no-icon"><label>End Date</label><input type="month" data-field="end" value="${escapeHTML(exp.end)}" placeholder="Leave blank if current"></div>
       </div>
       <div class="field no-icon"><label>Description</label><textarea rows="3" data-field="description" placeholder="Describe your responsibilities and achievements...">${escapeHTML(exp.description)}</textarea></div>
+      <div class="ai-toolbar">
+        <button type="button" class="btn btn-ghost btn-sm ai-btn ai-improve-exp-btn" data-exp-target="${exp.id}"><i class="fa-solid fa-wand-magic-sparkles"></i> Improve with AI <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span></button>
+      </div>
+      <div class="ai-result-box exp-ai-result" data-exp-result="${exp.id}" style="display:none;">
+        <div class="ai-result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> AI suggestion</div>
+        <p class="exp-ai-result-text"></p>
+        <div class="ai-result-actions">
+          <button type="button" class="btn btn-primary btn-sm exp-ai-use-btn">Use This</button>
+          <button type="button" class="btn btn-ghost btn-sm exp-ai-dismiss-btn">Dismiss</button>
+        </div>
+      </div>
     </div>`).join('') || '<p class="tag-muted">No work experience added yet.</p>';
+
+  wireExperienceAIButtons();
+}
+
+/** Wires the "Improve with AI" button for each rendered experience entry. */
+function wireExperienceAIButtons() {
+  document.querySelectorAll('.ai-improve-exp-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const expId = btn.getAttribute('data-exp-target');
+      const entryEl = document.querySelector(`[data-exp-id="${expId}"]`);
+      if (!entryEl) return;
+      const titleVal = entryEl.querySelector('[data-field="title"]').value.trim();
+      const companyVal = entryEl.querySelector('[data-field="company"]').value.trim();
+      const descVal = entryEl.querySelector('[data-field="description"]').value.trim();
+      if (!descVal) {
+        showToast('Add a rough description first, then let AI polish it', 'info');
+        return;
+      }
+      runAIAction(btn, 'experience-writer', { jobTitle: titleVal, company: companyVal, description: descVal }, (data) => {
+        const resultBox = document.querySelector(`[data-exp-result="${expId}"]`);
+        if (!resultBox) return;
+        resultBox.querySelector('.exp-ai-result-text').textContent = data.result;
+        resultBox.style.display = 'block';
+
+        const useBtn = resultBox.querySelector('.exp-ai-use-btn');
+        const dismissBtn = resultBox.querySelector('.exp-ai-dismiss-btn');
+        useBtn.onclick = () => {
+          entryEl.querySelector('[data-field="description"]').value = data.result;
+          syncFormToCV();
+          updatePreview();
+          resultBox.style.display = 'none';
+          showToast('Description updated', 'success');
+        };
+        dismissBtn.onclick = () => { resultBox.style.display = 'none'; };
+      });
+    });
+  });
 }
 
 function syncExperienceFromDOM() {
