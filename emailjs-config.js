@@ -20,9 +20,9 @@
    exact template variables this app sends.
    ========================================================= */
 
-const EMAILJS_PUBLIC_KEY = 'PASTE_YOUR_EMAILJS_PUBLIC_KEY_HERE';
-const EMAILJS_SERVICE_ID = 'PASTE_YOUR_EMAILJS_SERVICE_ID_HERE';
-const EMAILJS_TEMPLATE_ID = 'PASTE_YOUR_EMAILJS_TEMPLATE_ID_HERE';
+const EMAILJS_PUBLIC_KEY = 'HeCcTadiEyuN49LTM';
+const EMAILJS_SERVICE_ID = 'service_r345emn';
+const EMAILJS_TEMPLATE_ID = 'template_6dn0wwk';
 
 if (window.emailjs && !EMAILJS_PUBLIC_KEY.startsWith('PASTE_')) {
   emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
