@@ -25,7 +25,7 @@
       <a href="cv-builder.html"><i class="fa-solid fa-plus fa"></i> Create CV</a>
       <a href="my-cvs.html"><i class="fa-solid fa-folder-open fa"></i> My CVs</a>
       <a href="templates.html"><i class="fa-solid fa-swatchbook fa"></i> Templates</a>
-      <a href="ai-builder.html" class="active"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder <span class="nav-tag">Soon</span></a>
+      <a href="ai-builder.html" class="active"><i class="fa-solid fa-wand-magic-sparkles fa"></i> AI Builder</a>
       <a href="pro.html"><i class="fa-solid fa-crown fa"></i> Pro</a>
       <div class="nav-sep"></div>
       <a href="profile.html"><i class="fa-solid fa-user fa"></i> Profile</a>
@@ -55,42 +55,45 @@
         <h1>✨ AI CV Builder <span class="pro-badge" style="vertical-align:middle;"><i class="fa-solid fa-crown"></i> Pro</span></h1>
         <p class="lead">Build a stronger CV with AI. Generate professional content, improve your experience descriptions, and optimize your CV for the jobs you want.</p>
         <div class="ai-hero-actions">
-          <span class="soon-badge" style="font-size:0.8rem; padding:8px 18px;">Coming Soon</span>
-          <button class="btn btn-primary" id="aiNotifyBtn"><i class="fa-solid fa-bell"></i> Notify Me</button>
+          <span class="free-badge" style="font-size:0.8rem; padding:8px 18px;"><i class="fa-solid fa-circle-check"></i> 6 tools live now</span>
+          <button class="btn btn-primary" id="aiNotifyBtn"><i class="fa-solid fa-bell"></i> Notify Me About What's Next</button>
           <div class="alert alert-success" id="aiNotifyConfirm" style="display:none; margin:0; padding:10px 18px;">
-            <i class="fa-solid fa-circle-check"></i> You're on the list! We'll let you know when AI CV Builder becomes available.
+            <i class="fa-solid fa-circle-check"></i> You're on the list! We'll let you know when new AI tools like CV Score and Job Matcher become available.
           </div>
         </div>
       </div>
 
       <div class="section-title-row" style="margin-top:0;">
-        <h3>What's coming</h3>
+        <h3>AI Tools</h3>
       </div>
 
       <div class="grid-3">
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
             <div class="feature-icon"><i class="fa-solid fa-align-left"></i></div>
-            <span class="soon-badge">Soon</span>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
           </div>
           <h4>AI Professional Summary</h4>
           <p>Generate a professional summary based on your experience and target role.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="professional-summary"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
         </div>
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
             <div class="feature-icon"><i class="fa-solid fa-briefcase"></i></div>
-            <span class="soon-badge">Soon</span>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
           </div>
           <h4>AI Experience Writer</h4>
           <p>Turn simple descriptions into polished, professional CV bullet points.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="experience-writer"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
         </div>
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
             <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
-            <span class="soon-badge">Soon</span>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
           </div>
           <h4>AI Skills Suggestions</h4>
           <p>Get relevant skill suggestions based on your target job title.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="skills-suggestions"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
         </div>
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
@@ -111,20 +114,68 @@
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
             <div class="feature-icon"><i class="fa-solid fa-bullseye"></i></div>
-            <span class="soon-badge">Soon</span>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
           </div>
           <h4>Career Objective Generator</h4>
           <p>Generate a professional career objective tailored to your goals.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="career-objective"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
         </div>
         <div class="card ai-feature-card">
           <div class="ai-feature-card-top">
             <div class="feature-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
-            <span class="soon-badge">Soon</span>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
           </div>
           <h4>Cover Letter Generator</h4>
           <p>Generate a cover letter based on your CV and a target job.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="cover-letter"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
+        </div>
+        <div class="card ai-feature-card">
+          <div class="ai-feature-card-top">
+            <div class="feature-icon"><i class="fa-solid fa-broom"></i></div>
+            <span class="pro-badge ai-btn-badge"><i class="fa-solid fa-crown"></i></span>
+          </div>
+          <h4>Improve My Text</h4>
+          <p>Paste any CV text and get a clearer, more professional version.</p>
+          <button class="btn btn-secondary btn-sm w-full" data-ai-tool="improve-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="proUpgradeModal">
+  <div class="modal-box">
+    <div class="pro-modal-icon"><i class="fa-solid fa-crown"></i></div>
+    <h3>AI Tools</h3>
+    <p>AI-powered CV tools are available with CVGEN Pro. Unlock premium templates and all AI features.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="proModalClose">Maybe Later</button>
+      <a href="pro.html" class="btn btn-primary">View Pro Plans</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="aiToolModal">
+  <div class="modal-box cover-letter-modal-box">
+    <div class="pro-modal-icon" id="aiToolModalIcon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <h3 id="aiToolModalTitle">AI Tool</h3>
+    <p id="aiToolModalDesc"></p>
+
+    <div id="aiToolModalFields"></div>
+
+    <button type="button" class="btn btn-primary btn-block" id="aiToolGenerateBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</button>
+
+    <div class="ai-result-box" id="aiToolResultBox" style="display:none; margin-top:16px;">
+      <div class="ai-result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Result</div>
+      <div id="aiToolResultContent"></div>
+      <div class="ai-result-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="aiToolCopyBtn"><i class="fa-solid fa-copy"></i> Copy</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="aiToolRegenBtn">Regenerate</button>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-secondary" id="aiToolCloseBtn">Close</button>
     </div>
   </div>
 </div>

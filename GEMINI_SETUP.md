@@ -22,7 +22,7 @@ your API key is ever touched.
 2. Click **Get API key** → **Create API key** (pick or create a Google Cloud project when prompted — no billing needs to be attached for the free tier).
 3. Copy the key. **Do not paste it into this chat or into any file that gets committed as plain text in a public repo** — it only ever goes into one place (step 4 below).
 
-This app uses `gemini-2.5-flash` — Google's stable, generally-available free-tier model as of writing (10 requests/min, 250/day on the free tier; more than enough for testing and early usage).
+This app uses `gemini-3.6-flash` — Google's current generally-available, free-tier-eligible Flash model (no credit card required to start). Free-tier rate limits are per-project and can change, so check your exact live limits anytime at [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit) rather than relying on a fixed number here — but they're generous enough for testing and early usage.
 
 ## 2. Add the token as a Supabase secret (not a file, not the frontend)
 
@@ -101,7 +101,7 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/ai' \
 | "AI service is not configured yet" | `GEMINI_API_KEY` secret isn't set — redo step 2, then redeploy the function. |
 | "Not authenticated" | You're testing without a valid session / access token, or it expired — log in again. |
 | "This feature requires CVGEN Pro" even though you set `plan = 'pro'` | Double-check you edited the right row in `profiles` (matches your logged-in user's `id`), and that you're testing in the same browser session you set it in (or log out/in to refresh). |
-| "AI service is busy right now" (429) | You've hit Gemini's free-tier rate limit (10 requests/min or 250/day) — wait a bit. If this happens often during testing, space out your test clicks. |
+| "AI service is busy right now" (429) | You've hit Gemini's free-tier rate limit for your project — check your current limits at [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit), then wait a bit. If this happens often during testing, space out your test clicks. |
 | "AI service is temporarily unavailable" (502) | Gemini itself returned an error or was unreachable — check the Edge Function's logs (`supabase functions logs ai`) for the real underlying error. |
 | Nothing happens, no error | Check the browser console — likely a CORS or network issue; confirm the function actually deployed (`supabase functions list`). |
 

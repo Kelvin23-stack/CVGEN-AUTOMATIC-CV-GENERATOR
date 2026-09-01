@@ -1286,6 +1286,8 @@ async function initAiBuilderPage() {
   applySettings();
   initSidebar();
   populateSidebarUser();
+  initProUpgradeModal();
+  initAIToolModal();
 
   const notifyBtn = document.getElementById('aiNotifyBtn');
   const confirmBox = document.getElementById('aiNotifyConfirm');
@@ -1295,6 +1297,160 @@ async function initAiBuilderPage() {
   } else if (notifyBtn) {
     notifyBtn.addEventListener('click', notifyMeAI);
   }
+}
+
+/* ---------------------------------------------------------
+   Reusable AI Tool modal — one modal, driven by AI_TOOL_CONFIGS,
+   used on the AI Builder page so every implemented feature is
+   reachable from one place (not just inside the CV builder).
+   --------------------------------------------------------- */
+const AI_TOOL_CONFIGS = {
+  'professional-summary': {
+    title: 'AI Professional Summary',
+    icon: 'fa-align-left',
+    description: 'Generate a professional CV summary from your job title, experience and skills.',
+    fields: [
+      { id: 'title', label: 'Job Title', type: 'text', placeholder: 'Product Designer' },
+      { id: 'experienceSummary', label: 'Experience Summary', type: 'textarea', placeholder: 'Briefly describe your experience...' },
+      { id: 'skills', label: 'Key Skills', type: 'text', placeholder: 'Figma, UX research, prototyping' }
+    ]
+  },
+  'career-objective': {
+    title: 'AI Career Objective',
+    icon: 'fa-bullseye',
+    description: 'Generate a career objective aimed at a specific target role.',
+    fields: [
+      { id: 'title', label: 'Current / Recent Title', type: 'text', placeholder: 'Junior Developer' },
+      { id: 'targetRole', label: 'Target Role', type: 'text', placeholder: 'Frontend Engineer' },
+      { id: 'skills', label: 'Key Skills', type: 'text', placeholder: 'JavaScript, React' }
+    ]
+  },
+  'experience-writer': {
+    title: 'AI Experience Writer',
+    icon: 'fa-briefcase',
+    description: 'Turn a rough job description into polished, ATS-friendly CV bullet points.',
+    fields: [
+      { id: 'jobTitle', label: 'Job Title', type: 'text', placeholder: 'Marketing Intern' },
+      { id: 'company', label: 'Company', type: 'text', placeholder: 'Acme Corp' },
+      { id: 'description', label: 'Rough Description', type: 'textarea', placeholder: 'What did you actually do day to day?' }
+    ]
+  },
+  'skills-suggestions': {
+    title: 'AI Skills Suggestions',
+    icon: 'fa-bolt',
+    description: 'Get relevant skill suggestions based on your target role and experience.',
+    fields: [
+      { id: 'title', label: 'Job Title', type: 'text', placeholder: 'Data Analyst' },
+      { id: 'experienceSummary', label: 'Experience Summary', type: 'textarea', placeholder: 'Briefly describe your experience...' }
+    ],
+    resultType: 'chips'
+  },
+  'cover-letter': {
+    title: 'AI Cover Letter',
+    icon: 'fa-envelope-open-text',
+    description: 'Generate a cover letter based on your CV information and a target job.',
+    fields: [
+      { id: 'cvSummary', label: 'CV Summary / Experience', type: 'textarea', placeholder: 'Paste your summary or experience...' },
+      { id: 'targetJobTitle', label: 'Target Job Title', type: 'text', placeholder: 'Product Designer' },
+      { id: 'targetCompany', label: 'Target Company', type: 'text', placeholder: 'Acme Corp' }
+    ]
+  },
+  'improve-text': {
+    title: 'Improve My Text',
+    icon: 'fa-broom',
+    description: 'Improve the grammar, clarity and professionalism of any CV text.',
+    fields: [
+      { id: 'text', label: 'Your Text', type: 'textarea', placeholder: 'Paste the text you want improved...' }
+    ]
+  }
+};
+
+let activeAITool = null;
+
+function openAIToolModal(featureId) {
+  if (!isProUser()) { showProUpgradeModal(); return; }
+  const config = AI_TOOL_CONFIGS[featureId];
+  if (!config) return;
+  activeAITool = featureId;
+
+  document.getElementById('aiToolModalTitle').textContent = config.title;
+  document.getElementById('aiToolModalDesc').textContent = config.description;
+  document.getElementById('aiToolModalIcon').innerHTML = `<i class="fa-solid ${config.icon}"></i>`;
+
+  document.getElementById('aiToolModalFields').innerHTML = config.fields.map((f) => {
+    const tag = f.type === 'textarea'
+      ? `<textarea id="aiField_${f.id}" rows="3" placeholder="${escapeHTML(f.placeholder || '')}"></textarea>`
+      : `<input type="text" id="aiField_${f.id}" placeholder="${escapeHTML(f.placeholder || '')}">`;
+    return `<div class="field no-icon"><label>${escapeHTML(f.label)}</label>${tag}</div>`;
+  }).join('');
+
+  document.getElementById('aiToolResultBox').style.display = 'none';
+  document.getElementById('aiToolModal').classList.add('show');
+}
+
+function collectAIToolInput(featureId) {
+  const config = AI_TOOL_CONFIGS[featureId];
+  const input = {};
+  let hasAny = false;
+  config.fields.forEach((f) => {
+    const el = document.getElementById('aiField_' + f.id);
+    const val = el ? el.value.trim() : '';
+    input[f.id] = val;
+    if (val) hasAny = true;
+  });
+  return hasAny ? input : null;
+}
+
+function renderAIToolResult(data) {
+  const config = AI_TOOL_CONFIGS[activeAITool];
+  const box = document.getElementById('aiToolResultBox');
+  const content = document.getElementById('aiToolResultContent');
+
+  if (config.resultType === 'chips') {
+    content.className = 'chip-list';
+    content.innerHTML = (data.suggestions || []).map((s) => `<span class="chip"><span>${escapeHTML(s)}</span></span>`).join('')
+      || '<span class="tag-muted">No suggestions returned — try adding more detail.</span>';
+  } else {
+    content.className = '';
+    content.textContent = data.result;
+  }
+  box.style.display = 'block';
+}
+
+function initAIToolModal() {
+  const modal = document.getElementById('aiToolModal');
+  if (!modal) return;
+  const closeBtn = document.getElementById('aiToolCloseBtn');
+  const generateBtn = document.getElementById('aiToolGenerateBtn');
+  const regenBtn = document.getElementById('aiToolRegenBtn');
+  const copyBtn = document.getElementById('aiToolCopyBtn');
+
+  closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
+
+  function generate() {
+    const input = collectAIToolInput(activeAITool);
+    if (!input) { showToast('Fill in at least one field first', 'info'); return; }
+    runAIAction(generateBtn, activeAITool, input, renderAIToolResult);
+  }
+  generateBtn.addEventListener('click', generate);
+  regenBtn.addEventListener('click', generate);
+
+  copyBtn.addEventListener('click', () => {
+    const config = AI_TOOL_CONFIGS[activeAITool];
+    const content = document.getElementById('aiToolResultContent');
+    const text = config.resultType === 'chips'
+      ? Array.from(content.querySelectorAll('.chip span')).map((s) => s.textContent).join(', ')
+      : content.textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('Copied to clipboard', 'success'))
+      .catch(() => showToast('Could not copy — select and copy manually', 'error'));
+  });
+
+  document.querySelectorAll('[data-ai-tool]').forEach((btn) => {
+    btn.addEventListener('click', () => openAIToolModal(btn.getAttribute('data-ai-tool')));
+  });
 }
 
 /* =========================================================
